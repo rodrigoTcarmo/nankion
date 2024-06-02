@@ -1,4 +1,4 @@
-package statementreader
+package statement
 
 import (
 	"encoding/csv"
@@ -19,7 +19,7 @@ func ReadCsvFile(filepath string) [][]string {
 	csvReader.Comma = ';'
 	records, err := csvReader.ReadAll()
 	if err != nil {
-		log.Fatalf("Unable to parse file as CSV for: " + filepath, err)
+		log.Fatalf("Unable to parse file as CSV for: "+filepath, err)
 	}
 	return records
 }

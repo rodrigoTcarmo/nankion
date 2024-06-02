@@ -1,15 +1,17 @@
 package main
 
 import (
-	"cmd/statement-reader/pkg/statementreader"
 	"fmt"
+
+	"github.com/rodrigoTcarmo/nankion/pkg/notion"
+	"github.com/rodrigoTcarmo/nankion/pkg/statement"
 )
 
 func main() {
 	fmt.Println("Nankion app!")
 	fmt.Println("Readind CSV file...")
 
-	allRecords := statementreader.ReadCsvFile("extrato.csv")
+	allRecords := statement.ReadCsvFile("extrato.csv")
 
 	for _, v := range allRecords {
 		fmt.Println(v)
@@ -17,4 +19,6 @@ func main() {
 			fmt.Println(s)
 		}
 	}
+
+	notion.PagePrinter()
 }
