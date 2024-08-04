@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rodrigoTcarmo/nankion/pkg/notion-handler"
+	"github.com/rodrigoTcarmo/nankion/pkg/notion"
 )
 
 const (
@@ -20,7 +20,7 @@ func SearchItems(ctx *gin.Context) {
 		return
 	}
 	notionObjects := &notion.NotionObjects{}
-	var pages notion.NotionPages = notionObjects
+	var pages notion.NotionItems = notionObjects
 	pages.SearchItems(notion.NotionClient(), query)
 
 	if notionObjects.HttpStatus != http.StatusOK {
