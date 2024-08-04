@@ -18,7 +18,7 @@ type NotionObjects struct {
 	All        Objects
 	Page       []*notion.Page
 	Database   []*notion.Database
-	httpStatus int
+	HttpStatus int
 }
 
 func (n *NotionObjects) PageFinder(client *notion.Client, query string) {
@@ -43,9 +43,10 @@ func (n *NotionObjects) PageFinder(client *notion.Client, query string) {
 			}
 		}
 		n.All = asserted
-		n.httpStatus = http.StatusOK
+		n.HttpStatus = http.StatusOK
+	} else {
+		n.HttpStatus = http.StatusInternalServerError
 	}
-	n.httpStatus = http.StatusInternalServerError
 }
 
 func (n *NotionObjects) ObjectFoundIdentifier() {
