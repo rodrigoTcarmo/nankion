@@ -12,10 +12,8 @@ func StartApi() {
 		ctx.Set("Content-Type", "application/json")
 	})
 
-	var pageQuery pages.PageQuery = "ETCD"
-	var searchQuery pages.PageEndpoit = &pageQuery
 	route.GET("/ping", health.GetApiHealth)
-	route.GET("/pages", searchQuery.GetPages)
+	route.GET("/pages", pages.GetPages)
 	
 	route.Run()
 

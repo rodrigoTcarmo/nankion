@@ -8,27 +8,23 @@ import (
 	"github.com/rodrigoTcarmo/nankion/pkg/notion-handler"
 )
 
-type PageEndpoit interface{
-	GetPages(*gin.Context)
-}
+const (
+	PageNameQueryKey         = "pageName"
+	MissingQueryErrorMessage = "Missing page name!"
+)
 
-type PageQuery string
+func GetPages(ctx *gin.Context) {
 
-func (p *PageQuery)GetPages(ctx *gin.Context) {
-
-	query, ok := ctx.GetQuery("pageName")
-	if !ok {
-		ctx.JSON(422, map[string]string{
-			"message": "Missing page name!",
-		})
+	query := getUriQuery(ctx)
+	if query == ""{
 		return
 	}
 	notionObjects := &notion.NotionObjects{}
 	var pages notion.NotionPages = notionObjects
 	pages.PageFinder(notion.NotionClient(), query)
 
-	if notionObjects.HttpStatus != http.StatusOK{
-		ctx.JSON(404, map[string]string{
+	if notionObjects.HttpStatus != http.StatusOK {
+		ctx.AbortWithStatusJSON(404, map[string]string{
 			"message": "Notion page or database not found!",
 		})
 		return
@@ -37,9 +33,21 @@ func (p *PageQuery)GetPages(ctx *gin.Context) {
 	for _, v := range notionObjects.All {
 		err := json.NewEncoder(ctx.Writer).Encode(v)
 		if err != nil {
-			ctx.JSON(500, map[string]any{
+			ctx.AbortWithStatusJSON(500, map[string]any{
 				"error trying to marshal json": err,
 			})
+			return
 		}
 	}
+}
+
+func getUriQuery(ctx *gin.Context) string {
+	query, ok := ctx.GetQuery(PageNameQueryKey)
+	if !ok {
+		ctx.AbortWithStatusJSON(422, map[string]string{
+			"message": MissingQueryErrorMessage,
+		})
+		return ""
+	}
+	return query
 }
