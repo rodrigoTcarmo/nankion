@@ -3,7 +3,7 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/rodrigoTcarmo/nankion/pkg/api/health"
-	"github.com/rodrigoTcarmo/nankion/pkg/api/pages"
+	"github.com/rodrigoTcarmo/nankion/pkg/api/items"
 )
 
 func StartApi() {
@@ -13,8 +13,8 @@ func StartApi() {
 	})
 
 	route.GET("/ping", health.GetApiHealth)
-	route.GET("/items", pages.SearchItems)
-	
+	route.GET("/items", items.SearchItems)
+
 	route.Run()
 
 }
