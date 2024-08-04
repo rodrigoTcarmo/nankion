@@ -13,7 +13,7 @@ func StartApi() {
 	})
 
 	route.GET("/ping", health.GetApiHealth)
-	route.GET("/pages", pages.GetPages)
+	route.GET("/items", pages.SearchItems)
 	
 	route.Run()
 

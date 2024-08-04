@@ -13,7 +13,7 @@ const (
 	MissingQueryErrorMessage = "Missing page name!"
 )
 
-func GetPages(ctx *gin.Context) {
+func SearchItems(ctx *gin.Context) {
 
 	query := getUriQuery(ctx)
 	if query == ""{
