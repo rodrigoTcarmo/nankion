@@ -1,4 +1,4 @@
-package pages
+package items
 
 import (
 	"encoding/json"
@@ -16,12 +16,12 @@ const (
 func SearchItems(ctx *gin.Context) {
 
 	query := getUriQuery(ctx)
-	if query == ""{
+	if query == "" {
 		return
 	}
 	notionObjects := &notion.NotionObjects{}
 	var pages notion.NotionPages = notionObjects
-	pages.PageFinder(notion.NotionClient(), query)
+	pages.SearchItems(notion.NotionClient(), query)
 
 	if notionObjects.HttpStatus != http.StatusOK {
 		ctx.AbortWithStatusJSON(404, map[string]string{

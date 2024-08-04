@@ -11,7 +11,7 @@ import (
 type Objects []interface{}
 
 type NotionPages interface {
-	PageFinder(*notion.Client, string)
+	SearchItems(*notion.Client, string)
 }
 
 type NotionObjects struct {
@@ -21,7 +21,7 @@ type NotionObjects struct {
 	HttpStatus int
 }
 
-func (n *NotionObjects) PageFinder(client *notion.Client, query string) {
+func (n *NotionObjects) SearchItems(client *notion.Client, query string) {
 	gotResult, err := client.Search(context.Background(), &notion.SearchOpts{Query: query})
 	if err != nil {
 		fmt.Println(err)
