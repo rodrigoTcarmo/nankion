@@ -3,16 +3,33 @@ package notion
 import (
 	"context"
 	"fmt"
-	"log"
-	"os"
+
+	"github.com/dstotijn/go-notion"
 )
 
-func PagePrinter() {
-	client := NotionClient()
+type NotionPages interface {
+	PageFinder(*notion.Client, string)
+}
 
-	page, err := client.FindPageByID(context.Background(), os.Getenv("NOTION_NOTAS_RAPIDAS_PAGE_ID"))
+type NotionObjects struct {
+	Page     []*notion.Page
+	Database []*notion.Database
+}
+
+func (n *NotionObjects) PageFinder(client *notion.Client, query string) {
+	gotResult, err := client.Search(context.Background(), &notion.SearchOpts{Query: query})
 	if err != nil {
-		log.Panicf("Unable to get database page: ", err)
+		fmt.Println(err)
 	}
-	fmt.Println(page.Properties)
+
+	for _, v := range gotResult.Results {
+		switch found := v.(type) {
+		case notion.Database:
+			n.Database = append(n.Database, &found)
+		case notion.Page:
+			n.Page = append(n.Page, &found)
+		default:
+			fmt.Println("unsupported result type gotten")
+		}
+	}
 }

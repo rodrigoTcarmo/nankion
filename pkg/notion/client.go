@@ -2,7 +2,6 @@ package notion
 
 import (
 	"os"
-
 	"github.com/dstotijn/go-notion"
 )
 
