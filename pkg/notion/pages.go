@@ -2,24 +2,25 @@ package notion
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/dstotijn/go-notion"
 )
 
-type Page interface {
-	SearchPages(*notion.Client)
+type NotionPages interface {
+	SearchPages(*notion.Client, string) (notion.Page, error)
 }
 
-type Pages struct {
+type NotionPageObjects struct {
 	PageId string
+	Code   string
 }
 
-func (p *Pages) SearchPages(client *notion.Client) {
-	pagesFound, err := client.FindPageByID(context.Background(), p.PageId)
+func (p *NotionPageObjects) SearchPages(client *notion.Client, pageId string) (notion.Page, error) {
+	pageFound, err := client.FindPageByID(context.Background(), pageId)
 	if err != nil {
-		fmt.Println(err)
+		var notionErr notion.APIError
+		p.Code = notionErr.Code
+		return notion.Page{}, err
 	}
-
-	fmt.Println(pagesFound)
+	return pageFound, nil
 }

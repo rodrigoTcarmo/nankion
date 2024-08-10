@@ -5,23 +5,28 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/rodrigoTcarmo/nankion/pkg/notion"
 )
 
 const (
-	PageNameQueryKey         = "pageName"
-	MissingQueryErrorMessage = "Missing page name!"
+	itemsQueryKey            = "queryValue"
+	missingQueryErrorMessage = "Missing page name!"
 )
 
 func SearchItems(ctx *gin.Context) {
 
-	query := getUriQuery(ctx)
-	if query == "" {
+	query, ok := ctx.GetQuery(itemsQueryKey)
+	if !ok {
+		ctx.AbortWithStatusJSON(422, map[string]string{
+			"message": missingQueryErrorMessage,
+		})
 		return
 	}
+
 	notionObjects := &notion.NotionObjects{}
-	var pages notion.NotionItems = notionObjects
-	pages.SearchItems(notion.NotionClient(), query)
+	var items notion.NotionItems = notionObjects
+	items.SearchItems(notion.NotionClient(), query)
 
 	if notionObjects.HttpStatus != http.StatusOK {
 		ctx.AbortWithStatusJSON(404, map[string]string{
@@ -39,15 +44,4 @@ func SearchItems(ctx *gin.Context) {
 			return
 		}
 	}
-}
-
-func getUriQuery(ctx *gin.Context) string {
-	query, ok := ctx.GetQuery(PageNameQueryKey)
-	if !ok {
-		ctx.AbortWithStatusJSON(422, map[string]string{
-			"message": MissingQueryErrorMessage,
-		})
-		return ""
-	}
-	return query
 }
