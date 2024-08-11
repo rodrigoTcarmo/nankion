@@ -13,8 +13,6 @@ const (
 )
 
 func GetPage(ctx *gin.Context) {
-	notionPageObjects := &notion.NotionPageObjects{}
-	var pages notion.NotionPages = notionPageObjects
 
 	pageId, ok := ctx.GetQuery(pageId)
 	if !ok {
@@ -23,9 +21,10 @@ func GetPage(ctx *gin.Context) {
 		})
 		return
 	}
-	pageFound, err := pages.SearchPages(notion.NotionClient(), pageId)
+
+	pageFound, code, err := notion.SearchPages(notion.NotionClient(), pageId)
 	if err != nil {
-		ctx.AbortWithStatusJSON(400, map[string]any{
+		ctx.AbortWithStatusJSON(code, map[string]any{
 			"message":    err.Error(),
 			"Page Found": pageFound,
 		})
