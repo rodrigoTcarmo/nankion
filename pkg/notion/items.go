@@ -10,7 +10,7 @@ import (
 
 type Objects []interface{}
 
-type NotionPages interface {
+type NotionItems interface {
 	SearchItems(*notion.Client, string)
 }
 
