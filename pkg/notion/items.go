@@ -11,7 +11,7 @@ import (
 type Objects []interface{}
 
 type NotionItems interface {
-	SearchItems(*notion.Client, string)
+	SearchItems(string)
 }
 
 type NotionObjects struct {
@@ -19,10 +19,11 @@ type NotionObjects struct {
 	Page       []*notion.Page
 	Database   []*notion.Database
 	HttpStatus int
+	client *NankionClient
 }
 
-func (n *NotionObjects) SearchItems(client *notion.Client, query string) {
-	gotResult, err := client.Search(context.Background(), &notion.SearchOpts{Query: query})
+func (n *NotionObjects) SearchItems(query string) {
+	gotResult, err := n.client.Client.Search(context.Background(), &notion.SearchOpts{Query: query})
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -51,4 +52,10 @@ func (n *NotionObjects) SearchItems(client *notion.Client, query string) {
 
 func (n *NotionObjects) ObjectFoundIdentifier() {
 
+}
+
+func NewNotionObject() *NotionObjects{
+	return &NotionObjects{
+		client: NewNankionClient(),
+	}
 }

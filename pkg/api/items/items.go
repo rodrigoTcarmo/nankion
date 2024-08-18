@@ -24,9 +24,9 @@ func SearchItems(ctx *gin.Context) {
 		return
 	}
 
-	notionObjects := &notion.NotionObjects{}
+	notionObjects := notion.NewNotionObject()
 	var items notion.NotionItems = notionObjects
-	items.SearchItems(notion.NotionClient(), query)
+	items.SearchItems(query)
 
 	if notionObjects.HttpStatus != http.StatusOK {
 		ctx.AbortWithStatusJSON(404, map[string]string{
