@@ -20,8 +20,9 @@ func GetDatabase(ctx *gin.Context) {
 		})
 		return
 	}
+	var db notion.DatabaseClient = notion.NewDatabase()
 
-	database, code, err := notion.SearchDatabases(notion.NotionClient(), queryDatabaseId)
+	database, code, err := db.SearchDatabases(queryDatabaseId)
 	if err != nil {
 		ctx.AbortWithStatusJSON(code, map[string]any{
 			"message":        err.Error(),

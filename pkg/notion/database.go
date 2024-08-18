@@ -8,10 +8,18 @@ import (
 	"github.com/dstotijn/go-notion"
 )
 
-func SearchDatabases(client *notion.Client, databaseId string) (*notion.Database, int, error) {
+type DatabaseClient interface {
+	SearchDatabases(string) (*notion.Database, int, error)
+}
+
+type Database struct {
+	client *NankionClient
+}
+
+func (d *Database) SearchDatabases(databaseId string) (*notion.Database, int, error) {
 	var notionErr *notion.APIError
 
-	database, err := client.FindDatabaseByID(context.Background(), databaseId)
+	database, err := d.client.Client.FindDatabaseByID(context.Background(), databaseId)
 	if err != nil {
 		if errors.As(err, &notionErr) {
 			return nil, notionErr.Status, err
@@ -20,4 +28,10 @@ func SearchDatabases(client *notion.Client, databaseId string) (*notion.Database
 	}
 
 	return &database, http.StatusOK, nil
+}
+
+func NewDatabase() *Database {
+	return &Database{
+		client: NewNankionClient(),
+	}
 }
