@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/rodrigoTcarmo/nankion/pkg/api/databases"
 	"github.com/rodrigoTcarmo/nankion/pkg/api/health"
 	"github.com/rodrigoTcarmo/nankion/pkg/api/items"
 	"github.com/rodrigoTcarmo/nankion/pkg/api/pages"
@@ -16,6 +17,7 @@ func StartApi() {
 	route.GET("/ping", health.GetApiHealth)
 	route.GET("/items", items.SearchItems)
 	route.GET("/page", pages.GetPage)
+	route.GET("/database", databases.GetDatabase)
 	route.Run()
 
 }
