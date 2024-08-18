@@ -12,6 +12,10 @@ const (
 	missingPageIdErrorMessage = "Missing page ID!"
 )
 
+//	@title			Nankio get page
+//	@version		0.0.1
+//	@produce		json
+//	@description	This is an API that communicate with Notion API
 func GetPage(ctx *gin.Context) {
 
 	pageId, ok := ctx.GetQuery(pageId)

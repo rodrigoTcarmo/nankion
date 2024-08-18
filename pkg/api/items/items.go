@@ -14,6 +14,19 @@ const (
 	missingQueryErrorMessage = "Missing page name!"
 )
 
+//	 ListItems godoc
+//		@Summary		Search Items
+//		@Description	Search for items
+//		@Tags			item
+//		@Produce		json
+//
+//		@Param			id	path		int	true	"Account ID"
+//
+//		@Success		200	{array}		model.Account
+//		@Failure		422	{object}	httputil.HTTPError
+//		@Failure		404	{object}	httputil.HTTPError
+//		@Failure		500	{object}	httputil.HTTPError
+//		@Router			/items/{id} [get]
 func SearchItems(ctx *gin.Context) {
 
 	query, ok := ctx.GetQuery(itemsQueryKey)
