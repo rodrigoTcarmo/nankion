@@ -14,7 +14,7 @@ const (
 
 func GetPage(ctx *gin.Context) {
 
-	pageId, ok := ctx.GetQuery(pageId)
+	queryPageId, ok := ctx.GetQuery(pageId)
 	if !ok {
 		ctx.AbortWithStatusJSON(422, map[string]string{
 			"message": missingPageIdErrorMessage,
@@ -22,7 +22,7 @@ func GetPage(ctx *gin.Context) {
 		return
 	}
 
-	pageFound, code, err := notion.SearchPages(notion.NotionClient(), pageId)
+	pageFound, code, err := notion.SearchPages(notion.NotionClient(), queryPageId)
 	if err != nil {
 		ctx.AbortWithStatusJSON(code, map[string]any{
 			"message":    err.Error(),
