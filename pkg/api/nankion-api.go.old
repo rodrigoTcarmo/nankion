@@ -1,0 +1,35 @@
+/* package api
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/rodrigoTcarmo/nankion/cmd/statement/docs"
+	"github.com/rodrigoTcarmo/nankion/pkg/api/health"
+	"github.com/rodrigoTcarmo/nankion/pkg/api/items"
+	"github.com/rodrigoTcarmo/nankion/pkg/api/pages"
+	swaggerFiles "github.com/swaggo/files"     // swagger embed files
+	ginSwagger "github.com/swaggo/gin-swagger" // gin-swagger middleware
+)
+
+func StartApi() {
+	// programmatically set swagger info
+	docs.SwaggerInfo.Title = "Nankion APP!"
+	docs.SwaggerInfo.Description = "This is a sample server Petstore server."
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = "petstore.swagger.io"
+	docs.SwaggerInfo.BasePath = "/v2"
+	docs.SwaggerInfo.Schemes = []string{"http", "https"}
+
+	route := gin.Default()
+
+	route.HEAD("/", func(ctx *gin.Context) {
+		ctx.Set("Content-Type", "application/json")
+	})
+
+	route.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	route.GET("/ping", health.GetApiHealth)
+	route.GET("/items", items.SearchItems)
+	route.GET("/page", pages.GetPage)
+	route.Run()
+
+}
+ */
