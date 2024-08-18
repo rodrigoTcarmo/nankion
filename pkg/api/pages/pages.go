@@ -22,7 +22,9 @@ func GetPage(ctx *gin.Context) {
 		return
 	}
 
-	pageFound, code, err := notion.SearchPages(notion.NotionClient(), queryPageId)
+	var pg notion.PageClient = notion.NewPage()
+
+	pageFound, code, err := pg.SearchPages(queryPageId)
 	if err != nil {
 		ctx.AbortWithStatusJSON(code, map[string]any{
 			"message":    err.Error(),

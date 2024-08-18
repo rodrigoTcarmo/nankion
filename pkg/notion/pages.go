@@ -9,10 +9,18 @@ import (
 	"github.com/dstotijn/go-notion"
 )
 
-func SearchPages(client *notion.Client, pageId string) (*notion.Page, int, error) {
+type PageClient interface {
+	SearchPages(string) (*notion.Page, int, error)
+}
+
+type Page struct {
+	client *NankionClient
+}
+
+func (p *Page) SearchPages(pageId string) (*notion.Page, int, error) {
 	notionErr := &notion.APIError{}
 
-	pageFound, err := client.FindPageByID(context.Background(), pageId)
+	pageFound, err := p.client.Client.FindPageByID(context.Background(), pageId)
 	if err != nil {
 		if errors.As(err, &notionErr) {
 			return nil, notionErr.Status, fmt.Errorf(notionErr.Message)
@@ -20,4 +28,10 @@ func SearchPages(client *notion.Client, pageId string) (*notion.Page, int, error
 		return nil, http.StatusInternalServerError, fmt.Errorf("error trying to find page by ID: %v", err)
 	}
 	return &pageFound, http.StatusOK, nil
+}
+
+func NewPage() *Page {
+	return &Page{
+		client: NewNankionClient(),
+	}
 }
