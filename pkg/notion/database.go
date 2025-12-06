@@ -2,32 +2,37 @@ package notion
 
 import (
 	"context"
-	"errors"
-	"net/http"
+	"fmt"
 
 	"github.com/dstotijn/go-notion"
 )
 
 type DatabaseClient interface {
-	SearchDatabases(string) (*notion.Database, int, error)
+	GetDatabase(string) (*notion.Database, error)
+	ListDatabaseProperties(string) (*notion.DatabaseProperties, error)
 }
 
 type Database struct {
 	client *NankionClient
 }
 
-func (d *Database) SearchDatabases(databaseId string) (*notion.Database, int, error) {
-	var notionErr *notion.APIError
-
+func (d *Database) GetDatabase(databaseId string) (*notion.Database, error) {
 	database, err := d.client.Client.FindDatabaseByID(context.Background(), databaseId)
 	if err != nil {
-		if errors.As(err, &notionErr) {
-			return nil, notionErr.Status, err
-		}
-		return nil, http.StatusInternalServerError, err
+		return nil, fmt.Errorf("error trying to return Database by ID: %s", err)
 	}
 
-	return &database, http.StatusOK, nil
+	return &database, nil	
+}
+
+func (d *Database) ListDatabaseProperties(databaseId string) (*notion.DatabaseProperties, error) {
+	database, err := d.GetDatabase(databaseId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &database.Properties, nil
+
 }
 
 func NewDatabase() *Database {
