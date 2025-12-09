@@ -6,16 +6,10 @@ import (
 	"github.com/dstotijn/go-notion"
 )
 
-type NankionClient struct {
-	Client *notion.Client
-}
-
-func NewNankionClient() *NankionClient{
+func NewClient() *notion.Client{
 	secret := os.Getenv("NOTION_CARMO_SECRET")
 	if secret == ""{
 		panic("notion secret not found!")
 	}
-	return &NankionClient{
-		Client: notion.NewClient(secret),
-	}
+	return notion.NewClient(secret)
 }

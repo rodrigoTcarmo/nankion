@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/rodrigoTcarmo/nankion/pkg/cli/databases"
+	notiondatabase "github.com/rodrigoTcarmo/nankion/pkg/cli/databases"
 )
 
 func main() {
@@ -29,7 +29,8 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			databaseID := args[0]
 			fmt.Printf("Fetching database: %s\n", databaseID)
-			databases.GetDatabase(databaseID)
+			databaseCLI := notiondatabase.NewDatabaseCLI()
+			databaseCLI.GetDatabase(databaseID)
 		},
 	}
 
@@ -40,7 +41,8 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			databaseID := args[0]
 			fmt.Println("Fetching database properties: %s\n", databaseID)
-			databases.ListDatabaseProperties(databaseID)
+			databaseCLI := notiondatabase.NewDatabaseCLI()
+			databaseCLI.ListDatabaseProperties(databaseID)
 		},
 	}
 

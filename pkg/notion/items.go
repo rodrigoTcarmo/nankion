@@ -19,11 +19,11 @@ type NotionObjects struct {
 	Page       []*notion.Page
 	Database   []*notion.Database
 	HttpStatus int
-	client *NankionClient
+	client     *notion.Client
 }
 
 func (n *NotionObjects) SearchItems(query string) {
-	gotResult, err := n.client.Client.Search(context.Background(), &notion.SearchOpts{Query: query})
+	gotResult, err := n.client.Search(context.Background(), &notion.SearchOpts{Query: query})
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -54,8 +54,8 @@ func (n *NotionObjects) ObjectFoundIdentifier() {
 
 }
 
-func NewNotionObject() *NotionObjects{
+func NewNotionObject() *NotionObjects {
 	return &NotionObjects{
-		client: NewNankionClient(),
+		client: NewClient(),
 	}
 }

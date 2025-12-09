@@ -14,13 +14,13 @@ type PageClient interface {
 }
 
 type Page struct {
-	client *NankionClient
+	client *notion.Client
 }
 
 func (p *Page) SearchPages(pageId string) (*notion.Page, int, error) {
 	notionErr := &notion.APIError{}
 
-	pageFound, err := p.client.Client.FindPageByID(context.Background(), pageId)
+	pageFound, err := p.client.FindPageByID(context.Background(), pageId)
 	if err != nil {
 		if errors.As(err, &notionErr) {
 			return nil, notionErr.Status, fmt.Errorf(notionErr.Message)
@@ -32,6 +32,6 @@ func (p *Page) SearchPages(pageId string) (*notion.Page, int, error) {
 
 func NewPage() *Page {
 	return &Page{
-		client: NewNankionClient(),
+		client: NewClient(),
 	}
 }
