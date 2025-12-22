@@ -4,13 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/rodrigoTcarmo/nankion/pkg/notion"
+	notiondatabase "github.com/rodrigoTcarmo/nankion/pkg/notion/database"
 )
 
-func GetDatabase(databaseID string) {
-	var db notion.DatabaseClient = notion.NewDatabase()
+type DatabaseCLI struct {
+	database notiondatabase.DatabaseClient
+}
 
-	database, err := db.GetDatabase(databaseID)
+func NewDatabaseCLI() *DatabaseCLI {
+	return &DatabaseCLI{
+		database: notiondatabase.NewDatabase(),
+	}
+}
+
+func (d *DatabaseCLI) GetDatabase(databaseID string) {
+	database, err := d.database.GetDatabase(databaseID)
 	if err != nil {
 		fmt.Printf("error trying to get database: %s", err)
 	}
@@ -22,10 +30,8 @@ func GetDatabase(databaseID string) {
 	fmt.Println(string(databaseOutput))
 }
 
-func ListDatabaseProperties(databaseID string) {
-	var db notion.DatabaseClient = notion.NewDatabase()
-
-	database, err := db.ListDatabaseProperties(databaseID)
+func (d *DatabaseCLI) ListDatabaseProperties(databaseID string) {
+	database, err := d.database.ListDatabaseProperties(databaseID)
 	if err != nil {
 		fmt.Printf("error trying to get database properties: %s", err)
 	}

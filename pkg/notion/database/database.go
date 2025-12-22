@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/dstotijn/go-notion"
+	notionclient "github.com/rodrigoTcarmo/nankion/pkg/notion"
 )
 
 type DatabaseClient interface {
@@ -13,16 +14,16 @@ type DatabaseClient interface {
 }
 
 type Database struct {
-	client *NankionClient
+	client *notion.Client
 }
 
 func (d *Database) GetDatabase(databaseId string) (*notion.Database, error) {
-	database, err := d.client.Client.FindDatabaseByID(context.Background(), databaseId)
+	database, err := d.client.FindDatabaseByID(context.Background(), databaseId)
 	if err != nil {
 		return nil, fmt.Errorf("error trying to return Database by ID: %s", err)
 	}
 
-	return &database, nil	
+	return &database, nil
 }
 
 func (d *Database) ListDatabaseProperties(databaseId string) (*notion.DatabaseProperties, error) {
@@ -37,6 +38,6 @@ func (d *Database) ListDatabaseProperties(databaseId string) (*notion.DatabasePr
 
 func NewDatabase() *Database {
 	return &Database{
-		client: NewNankionClient(),
+		client: notionclient.NewClient(),
 	}
 }
