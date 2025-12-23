@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	notiondatabase "github.com/rodrigoTcarmo/nankion/pkg/cli/databases"
+	"github.com/rodrigoTcarmo/nankion/pkg/statement"
+	"github.com/spf13/cobra"
 )
 
 func main() {
@@ -22,6 +23,22 @@ func main() {
 		Short: "Manage your Notion databases",
 	}
 
+	printReportCmd := &cobra.Command{
+		Use:   "print-report [ofx-filepath]",
+		Short: "Print a report from an OFX file",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			filepath := args[0]
+			fmt.Printf("Printing report from: %s\n", filepath)
+			report, err := statement.LoadReport(filepath)
+			if err != nil {
+				fmt.Printf("Error loading report: %s\n", err)
+				return
+			}
+			fmt.Println("Statements\n", report.Statements)
+		},
+	}
+
 	getDatabaseCmd := &cobra.Command{
 		Use:   "get [database-id]",
 		Short: "Get a Notion database by ID",
@@ -34,10 +51,10 @@ func main() {
 		},
 	}
 
-	listDatabasePropertiesCmd := &cobra.Command {
-		Use: "get-properties [database-id]",
+	listDatabasePropertiesCmd := &cobra.Command{
+		Use:   "get-properties [database-id]",
 		Short: "Get a Notion database properties by ID",
-		Args: cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			databaseID := args[0]
 			fmt.Println("Fetching database properties: %s\n", databaseID)
@@ -48,6 +65,7 @@ func main() {
 
 	databaseCmd.AddCommand(getDatabaseCmd)
 	databaseCmd.AddCommand(listDatabasePropertiesCmd)
+	databaseCmd.AddCommand(printReportCmd)
 	rootCmd.AddCommand(databaseCmd)
 
 	if err := rootCmd.Execute(); err != nil {
