@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	notiondatabase "github.com/rodrigoTcarmo/nankion/pkg/cli/databases"
+	notiondatabase "github.com/rodrigoTcarmo/nankion/pkg/notion/database"
 	"github.com/rodrigoTcarmo/nankion/pkg/statement"
 	"github.com/spf13/cobra"
 )
@@ -51,8 +51,13 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			databaseID := args[0]
 			fmt.Printf("Fetching database: %s\n", databaseID)
-			databaseCLI := notiondatabase.NewDatabaseCLI()
-			databaseCLI.GetDatabase(databaseID)
+			databaseCLI := notiondatabase.NewDatabase()
+			database, err := databaseCLI.GetDatabase(databaseID)
+			if err != nil {
+				fmt.Printf("Error fetching database: %s\n", err)
+				return
+			}
+			fmt.Println("Database\n", database)
 		},
 	}
 
@@ -62,9 +67,14 @@ func main() {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			databaseID := args[0]
-			fmt.Println("Fetching database properties: %s\n", databaseID)
-			databaseCLI := notiondatabase.NewDatabaseCLI()
-			databaseCLI.ListDatabaseProperties(databaseID)
+			fmt.Printf("Fetching database properties: %s\n", databaseID)
+			databaseCLI := notiondatabase.NewDatabase()
+			database, err := databaseCLI.ListDatabaseProperties(databaseID)
+			if err != nil {
+				fmt.Printf("Error fetching database properties: %s\n", err)
+				return
+			}
+			fmt.Println("Database properties\n", database)
 		},
 	}
 
