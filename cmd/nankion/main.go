@@ -23,8 +23,13 @@ func main() {
 		Short: "Manage your Notion databases",
 	}
 
+	reportCmd := &cobra.Command{
+		Use:   "report",
+		Short: "Manage your reports",
+	}
+
 	printReportCmd := &cobra.Command{
-		Use:   "print-report [ofx-filepath]",
+		Use:   "print [ofx-filepath]",
 		Short: "Print a report from an OFX file",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -65,8 +70,11 @@ func main() {
 
 	databaseCmd.AddCommand(getDatabaseCmd)
 	databaseCmd.AddCommand(listDatabasePropertiesCmd)
-	databaseCmd.AddCommand(printReportCmd)
+
+	reportCmd.AddCommand(printReportCmd)
+
 	rootCmd.AddCommand(databaseCmd)
+	rootCmd.AddCommand(reportCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
