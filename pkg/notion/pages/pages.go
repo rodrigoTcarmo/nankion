@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/dstotijn/go-notion"
+	notionclient "github.com/rodrigoTcarmo/nankion/pkg/notion/client"
 )
 
 type PageClient interface {
@@ -32,6 +33,6 @@ func (p *Page) SearchPages(pageId string) (*notion.Page, int, error) {
 
 func NewPage() *Page {
 	return &Page{
-		client: NewClient(),
+		client: notionclient.NewClient(),
 	}
 }

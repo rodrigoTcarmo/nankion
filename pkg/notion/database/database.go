@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/dstotijn/go-notion"
-	notionclient "github.com/rodrigoTcarmo/nankion/pkg/notion"
+	notionclient "github.com/rodrigoTcarmo/nankion/pkg/notion/client"
 )
 
 type DatabaseClient interface {
