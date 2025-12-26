@@ -74,10 +74,7 @@ func main() {
 				fmt.Printf("Error fetching database properties: %s\n", err)
 				return
 			}	
-			for _, property := range database {
-				fmt.Println(property.Name)
-				fmt.Println(property.Type)
-			}
+			fmt.Println("Database properties\n", database)
 		},
 	}
 
