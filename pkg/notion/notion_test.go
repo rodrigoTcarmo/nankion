@@ -147,7 +147,7 @@ func TestUploadReport(t *testing.T) {
 					"Transaction Date": notion.DatabaseProperty{Name: "Transaction Date", Type: notion.DBPropTypeDate},
 					"Operation":        notion.DatabaseProperty{Name: "Operation", Type: notion.DBPropTypeSelect},
 					"Destination":      notion.DatabaseProperty{Name: "Destination", Type: notion.DBPropTypeRichText},
-					"Amount":           notion.DatabaseProperty{Name: "Amount", Type: notion.DBPropTypeRichText}, // Wrong type! Should be Number
+					"Amount":           notion.DatabaseProperty{Name: "Amount", Type: notion.DBPropTypeRichText}, // Should be Number
 					"Memo":             notion.DatabaseProperty{Name: "Memo", Type: notion.DBPropTypeRichText},
 					"Transaction ID":   notion.DatabaseProperty{Name: "Transaction ID", Type: notion.DBPropTypeRichText},
 				}, nil
@@ -162,8 +162,8 @@ func TestUploadReport(t *testing.T) {
 			},
 			mockDatabaseProperties: func(databaseId string) (notion.DatabaseProperties, error) {
 				return notion.DatabaseProperties{
-					"Transaction Date": notion.DatabaseProperty{Name: "Transaction Date", Type: notion.DBPropTypeRichText}, // Wrong! Should be Date
-					"Operation":        notion.DatabaseProperty{Name: "Operation", Type: notion.DBPropTypeRichText},        // Wrong! Should be Select
+					"Transaction Date": notion.DatabaseProperty{Name: "Transaction Date", Type: notion.DBPropTypeRichText}, // Should be Date
+					"Operation":        notion.DatabaseProperty{Name: "Operation", Type: notion.DBPropTypeRichText},        // Should be Select
 					"Destination":      notion.DatabaseProperty{Name: "Destination", Type: notion.DBPropTypeRichText},
 					"Amount":           notion.DatabaseProperty{Name: "Amount", Type: notion.DBPropTypeNumber},
 					"Memo":             notion.DatabaseProperty{Name: "Memo", Type: notion.DBPropTypeRichText},
@@ -188,12 +188,17 @@ func TestUploadReport(t *testing.T) {
 			err := loader.UploadReport(&statement.Report{})
 			if err != nil {
 				if test.wantError != nil {
+					
+					// check if the missing properties obtained are the expected ones
 					if strings.Contains(err.Error(), "missing properties") {
 						for propName := range allProperties {
+
+							// Unexpected missing property case
 							if strings.Contains(err.Error(), propName) && !strings.Contains(test.wantError.Error(), propName) {
 								t.Errorf("%s property was not expected to be missing", propName)
 							}
 
+							// Unexpected existing property case
 							if !strings.Contains(err.Error(), propName) && strings.Contains(test.wantError.Error(), propName) {
 								t.Errorf("%s property was expected to be missing", propName)
 							}
@@ -209,7 +214,7 @@ func TestUploadReport(t *testing.T) {
 					t.Fatalf("expected no error, got: %v", err)
 				}
 			} else if test.wantError != nil {
-				t.Errorf("expected %v error but got nil", test.wantError)
+				t.Errorf("expected %v error, got nil", test.wantError)
 			}
 		})
 	}
