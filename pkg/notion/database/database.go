@@ -10,7 +10,7 @@ import (
 
 type DatabaseClient interface {
 	GetDatabase(string) (*notion.Database, error)
-	ListDatabaseProperties(string) (*notion.DatabaseProperties, error)
+	ListDatabaseProperties(string) (notion.DatabaseProperties, error)
 }
 
 type Database struct {
@@ -26,13 +26,13 @@ func (d *Database) GetDatabase(databaseId string) (*notion.Database, error) {
 	return &database, nil
 }
 
-func (d *Database) ListDatabaseProperties(databaseId string) (*notion.DatabaseProperties, error) {
+func (d *Database) ListDatabaseProperties(databaseId string) (notion.DatabaseProperties, error) {
 	database, err := d.GetDatabase(databaseId)
 	if err != nil {
 		return nil, err
 	}
 
-	return &database.Properties, nil
+	return database.Properties, nil
 
 }
 
