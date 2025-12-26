@@ -9,7 +9,7 @@ import (
 // MockDatabaseClient implements notion.DatabaseClient for testing
 type MockDatabaseClient struct {
 	GetDatabaseFunc            func(databaseID string) (*notion.Database, error)
-	ListDatabasePropertiesFunc func(databaseID string) (*notion.DatabaseProperties, error)
+	ListDatabasePropertiesFunc func(databaseID string) (notion.DatabaseProperties, error)
 }
 
 func (m *MockDatabaseClient) GetDatabase(databaseID string) (*notion.Database, error) {
@@ -19,7 +19,7 @@ func (m *MockDatabaseClient) GetDatabase(databaseID string) (*notion.Database, e
 	return nil, errors.New("GetDatabaseFunc not set")
 }
 
-func (m *MockDatabaseClient) ListDatabaseProperties(databaseID string) (*notion.DatabaseProperties, error) {
+func (m *MockDatabaseClient) ListDatabaseProperties(databaseID string) (notion.DatabaseProperties, error) {
 	if m.ListDatabasePropertiesFunc != nil {
 		return m.ListDatabasePropertiesFunc(databaseID)
 	}
