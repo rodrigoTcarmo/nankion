@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/dstotijn/go-notion"
+	notionclient "github.com/rodrigoTcarmo/nankion/pkg/notion/client"
 )
 
 type Objects []interface{}
@@ -56,6 +57,6 @@ func (n *NotionObjects) ObjectFoundIdentifier() {
 
 func NewNotionObject() *NotionObjects {
 	return &NotionObjects{
-		client: NewClient(),
+		client: notionclient.NewClient(),
 	}
 }
