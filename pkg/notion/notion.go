@@ -38,10 +38,11 @@ func (n *Notion) UploadReport(databaseID string) error {
 		existentProperties[property.Name] = property.Type
 	}
 
-	var missingProperties = RequiredProperties
+	// Create a copy of RequiredProperties to track missing ones
+	missingProperties := make(map[string]*notion.DatabaseProperty)
 	for reqPropName, reqProp := range RequiredProperties {
-		if propType, ok := existentProperties[reqPropName]; ok && propType == reqProp.Type {
-			delete(missingProperties, reqPropName)
+		if propType, ok := existentProperties[reqPropName]; !ok || propType != reqProp.Type {
+			missingProperties[reqPropName] = reqProp
 		}
 	}
 
