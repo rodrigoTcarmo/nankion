@@ -10,7 +10,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	databasemock "github.com/rodrigoTcarmo/nankion/pkg/notion/database/mocks"
-	"github.com/rodrigoTcarmo/nankion/pkg/statement"
 )
 
 func TestUploadReport(t *testing.T) {
@@ -24,11 +23,12 @@ func TestUploadReport(t *testing.T) {
 		"Transaction ID":   notion.DatabaseProperty{Name: "Transaction ID", Type: notion.DBPropTypeRichText},
 	}
 	tests := []struct {
-		name                   string
-		envDatabaseId          string
-		mockDatabase           func(string) (*notion.Database, error)
-		mockDatabaseProperties func(string) (notion.DatabaseProperties, error)
-		wantError              error
+		name                         string
+		envDatabaseId                string
+		mockDatabase                 func(string) (*notion.Database, error)
+		mockDatabaseProperties       func(string) (notion.DatabaseProperties, error)
+		mockUpsertDatabaseProperties func(string, map[string]*notion.DatabaseProperty) error
+		wantError                    error
 	}{
 		{
 			name:          "get all expected properties from notion",
@@ -176,19 +176,20 @@ func TestUploadReport(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			loader := &NotionLoader{
-				notionClient: &databasemock.MockDatabaseClient{
-					GetDatabaseFunc:            test.mockDatabase,
-					ListDatabasePropertiesFunc: test.mockDatabaseProperties,
+			loader := &Notion{
+				database: &databasemock.MockDatabaseClient{
+					GetDatabaseFunc:              test.mockDatabase,
+					ListDatabasePropertiesFunc:   test.mockDatabaseProperties,
+					UpsertDatabasePropertiesFunc: test.mockUpsertDatabaseProperties,
 				},
 			}
 
 			os.Setenv("DATABASE_ID", test.envDatabaseId)
 
-			err := loader.UploadReport(&statement.Report{})
+			err := loader.UploadReport(test.envDatabaseId)
 			if err != nil {
 				if test.wantError != nil {
-					
+
 					// check if the missing properties obtained are the expected ones
 					if strings.Contains(err.Error(), "missing properties") {
 						for propName := range allProperties {
