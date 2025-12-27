@@ -407,6 +407,7 @@ const (
 	NumberFormatRiyal            NumberFormat = "riyal"
 	NumberFormatRinggit          NumberFormat = "ringgit"
 	NumberFormatLeu              NumberFormat = "leu"
+	NumberFormatReal             NumberFormat = "real"
 
 	// Formula result type enums.
 	FormulaResultTypeString  FormulaResultType = "string"
