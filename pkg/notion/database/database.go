@@ -8,16 +8,17 @@ import (
 	notionclient "github.com/rodrigoTcarmo/nankion/pkg/notion/client"
 )
 
-type DatabaseClient interface {
+type Database interface {
 	GetDatabase(string) (*notion.Database, error)
 	ListDatabaseProperties(string) (notion.DatabaseProperties, error)
+	UpsertDatabaseProperties(string, map[string]*notion.DatabaseProperty) error
 }
 
-type Database struct {
+type database struct {
 	client *notion.Client
 }
 
-func (d *Database) GetDatabase(databaseId string) (*notion.Database, error) {
+func (d *database) GetDatabase(databaseId string) (*notion.Database, error) {
 	database, err := d.client.FindDatabaseByID(context.Background(), databaseId)
 	if err != nil {
 		return nil, fmt.Errorf("error trying to return Database by ID: %s", err)
@@ -26,7 +27,7 @@ func (d *Database) GetDatabase(databaseId string) (*notion.Database, error) {
 	return &database, nil
 }
 
-func (d *Database) ListDatabaseProperties(databaseId string) (notion.DatabaseProperties, error) {
+func (d *database) ListDatabaseProperties(databaseId string) (notion.DatabaseProperties, error) {
 	database, err := d.GetDatabase(databaseId)
 	if err != nil {
 		return nil, err
@@ -36,8 +37,21 @@ func (d *Database) ListDatabaseProperties(databaseId string) (notion.DatabasePro
 
 }
 
-func NewDatabase() *Database {
-	return &Database{
+func (d *database) UpsertDatabaseProperties(databaseId string, properties map[string]*notion.DatabaseProperty) error {
+	databaseParams := notion.UpdateDatabaseParams{
+		Properties: properties,
+	}
+
+	_, err := d.client.UpdateDatabase(context.Background(), databaseId, databaseParams)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func NewDatabase() *database {
+	return &database{
 		client: notionclient.NewClient(),
 	}
 }
