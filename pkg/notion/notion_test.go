@@ -3,6 +3,8 @@ package notion
 import (
 	"errors"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -10,7 +12,17 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	databasemock "github.com/rodrigoTcarmo/nankion/pkg/notion/database/mocks"
+	"github.com/rodrigoTcarmo/nankion/pkg/notion/page"
+	pagemock "github.com/rodrigoTcarmo/nankion/pkg/notion/page/mocks"
+	"github.com/rodrigoTcarmo/nankion/pkg/statement"
 )
+
+// getTestDataPath returns the absolute path to the testdata directory
+func getTestDataPath(filename string) string {
+	_, currentFile, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(currentFile)
+	return filepath.Join(dir, "testdata", filename)
+}
 
 func TestUploadReport(t *testing.T) {
 	databaseId := "1234567890"
@@ -25,31 +37,27 @@ func TestUploadReport(t *testing.T) {
 	tests := []struct {
 		name                   string
 		envDatabaseId          string
+		filePath               string
 		mockDatabase           func(string) (*notion.Database, error)
 		mockDatabaseProperties func(string) (notion.DatabaseProperties, error)
 		wantError              error
 		wantUpsertProperties   []string
+		wantCreatePageCalls    int
 	}{
 		{
-			name:          "get all expected properties from notion",
+			name:          "get all expected properties from notion and create pages",
 			envDatabaseId: databaseId,
-			mockDatabase: func(databaseId string) (*notion.Database, error) {
-				return &notion.Database{
-					ID:         databaseId,
-					Properties: allProperties,
-				}, nil
-			},
+			filePath:      getTestDataPath("test.ofx"),
 			mockDatabaseProperties: func(databaseId string) (notion.DatabaseProperties, error) {
 				return allProperties, nil
 			},
-			wantError: nil,
+			wantError:           nil,
+			wantCreatePageCalls: 1,
 		},
 		{
 			name:          "succeed when database has extra properties beyond required ones",
 			envDatabaseId: databaseId,
-			mockDatabase: func(databaseId string) (*notion.Database, error) {
-				return &notion.Database{ID: databaseId}, nil
-			},
+			filePath:      getTestDataPath("test.ofx"),
 			mockDatabaseProperties: func(databaseId string) (notion.DatabaseProperties, error) {
 				propsWithExtra := notion.DatabaseProperties{
 					"Transaction Date": notion.DatabaseProperty{Name: "Transaction Date", Type: notion.DBPropTypeDate},
@@ -63,49 +71,44 @@ func TestUploadReport(t *testing.T) {
 				}
 				return propsWithExtra, nil
 			},
-			wantError: nil,
+			wantError:           nil,
+			wantCreatePageCalls: 1,
 		},
 		{
 			name:          "return error if database does not exist",
 			envDatabaseId: databaseId,
+			filePath:      "nonexistent.ofx",
 			mockDatabase: func(databaseId string) (*notion.Database, error) {
 				return nil, errors.New("database not found")
 			},
-			wantError: errors.New("error trying to get database by ID: database not found"),
+			wantError:           errors.New("error trying to validate database: database not found"),
+			wantCreatePageCalls: 0,
 		},
 		{
 			name:          "return error if listing database properties fails",
 			envDatabaseId: databaseId,
-			mockDatabase: func(databaseId string) (*notion.Database, error) {
-				return &notion.Database{ID: databaseId}, nil
-			},
+			filePath:      "nonexistent.ofx",
 			mockDatabaseProperties: func(databaseId string) (notion.DatabaseProperties, error) {
 				return nil, errors.New("unauthorized access")
 			},
-			wantError: errors.New("error trying to list database properties: unauthorized access"),
+			wantError:           errors.New("error trying to validate database properties: error trying to list database properties: unauthorized access"),
+			wantCreatePageCalls: 0,
 		},
 		{
 			name:          "create all properties when all are missing",
 			envDatabaseId: databaseId,
-			mockDatabase: func(databaseId string) (*notion.Database, error) {
-				return &notion.Database{
-					ID: databaseId,
-				}, nil
-			},
+			filePath:      getTestDataPath("test.ofx"),
 			mockDatabaseProperties: func(databaseId string) (notion.DatabaseProperties, error) {
 				return notion.DatabaseProperties{}, nil
 			},
 			wantError:            nil,
 			wantUpsertProperties: []string{"Transaction Date", "Operation", "Destination", "Amount", "Memo", "Transaction ID"},
+			wantCreatePageCalls:  1,
 		},
 		{
 			name:          "create Transaction ID property when it is missing",
 			envDatabaseId: databaseId,
-			mockDatabase: func(databaseId string) (*notion.Database, error) {
-				return &notion.Database{
-					ID: databaseId,
-				}, nil
-			},
+			filePath:      getTestDataPath("test.ofx"),
 			mockDatabaseProperties: func(databaseId string) (notion.DatabaseProperties, error) {
 				return notion.DatabaseProperties{
 					"Transaction Date": notion.DatabaseProperty{Name: "Transaction Date", Type: notion.DBPropTypeDate},
@@ -117,13 +120,12 @@ func TestUploadReport(t *testing.T) {
 			},
 			wantError:            nil,
 			wantUpsertProperties: []string{"Transaction ID"},
+			wantCreatePageCalls:  1,
 		},
 		{
 			name:          "create multiple properties when they are missing",
 			envDatabaseId: databaseId,
-			mockDatabase: func(databaseId string) (*notion.Database, error) {
-				return &notion.Database{ID: databaseId}, nil
-			},
+			filePath:      getTestDataPath("test.ofx"),
 			mockDatabaseProperties: func(databaseId string) (notion.DatabaseProperties, error) {
 				return notion.DatabaseProperties{
 					"Transaction Date": notion.DatabaseProperty{Name: "Transaction Date", Type: notion.DBPropTypeDate},
@@ -133,13 +135,12 @@ func TestUploadReport(t *testing.T) {
 			},
 			wantError:            nil,
 			wantUpsertProperties: []string{"Amount", "Memo", "Transaction ID"},
+			wantCreatePageCalls:  1,
 		},
 		{
 			name:          "create property when it exists but with wrong type",
 			envDatabaseId: databaseId,
-			mockDatabase: func(databaseId string) (*notion.Database, error) {
-				return &notion.Database{ID: databaseId}, nil
-			},
+			filePath:      getTestDataPath("test.ofx"),
 			mockDatabaseProperties: func(databaseId string) (notion.DatabaseProperties, error) {
 				return notion.DatabaseProperties{
 					"Transaction Date": notion.DatabaseProperty{Name: "Transaction Date", Type: notion.DBPropTypeDate},
@@ -152,13 +153,12 @@ func TestUploadReport(t *testing.T) {
 			},
 			wantError:            nil,
 			wantUpsertProperties: []string{"Amount"},
+			wantCreatePageCalls:  1,
 		},
 		{
 			name:          "create multiple properties when they have wrong types",
 			envDatabaseId: databaseId,
-			mockDatabase: func(databaseId string) (*notion.Database, error) {
-				return &notion.Database{ID: databaseId}, nil
-			},
+			filePath:      getTestDataPath("test.ofx"),
 			mockDatabaseProperties: func(databaseId string) (notion.DatabaseProperties, error) {
 				return notion.DatabaseProperties{
 					"Transaction Date": notion.DatabaseProperty{Name: "Transaction Date", Type: notion.DBPropTypeRichText}, // Should be Date
@@ -171,6 +171,17 @@ func TestUploadReport(t *testing.T) {
 			},
 			wantError:            nil,
 			wantUpsertProperties: []string{"Transaction Date", "Operation"},
+			wantCreatePageCalls:  1,
+		},
+		{
+			name:          "return error when loading report fails",
+			envDatabaseId: databaseId,
+			filePath:      "nonexistent.ofx",
+			mockDatabaseProperties: func(databaseId string) (notion.DatabaseProperties, error) {
+				return allProperties, nil
+			},
+			wantError:           errors.New("error trying to load statement report"),
+			wantCreatePageCalls: 0,
 		},
 	}
 
@@ -178,6 +189,7 @@ func TestUploadReport(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			upsertCalled := false
 			var upsertedProperties map[string]*notion.DatabaseProperty
+			createPageCalls := 0
 
 			mockUpsert := func(databaseId string, properties map[string]*notion.DatabaseProperty) error {
 				upsertCalled = true
@@ -185,17 +197,35 @@ func TestUploadReport(t *testing.T) {
 				return nil
 			}
 
+			// Setup page mock with call tracking
+			var mockPage *pagemock.MockPageClient
+			mockPage = &pagemock.MockPageClient{
+				BuildPageFunc: func(dbID string, stmt statement.Statement) page.PageData {
+					return page.PageData{DatabaseId: dbID}
+				},
+				CreatePageFunc: func(pageData page.PageData) error {
+					createPageCalls++
+					return nil
+				},
+			}
+
 			loader := &Notion{
 				database: &databasemock.MockDatabaseClient{
-					GetDatabaseFunc:              test.mockDatabase,
+					GetDatabaseFunc: func(databaseId string) (*notion.Database, error) {
+						if test.mockDatabase != nil {
+							return test.mockDatabase(databaseId)
+						}
+						return &notion.Database{ID: databaseId, Properties: allProperties}, nil
+					},
 					ListDatabasePropertiesFunc:   test.mockDatabaseProperties,
 					UpsertDatabasePropertiesFunc: mockUpsert,
 				},
+				page: mockPage,
 			}
 
 			os.Setenv("DATABASE_ID", test.envDatabaseId)
 
-			err := loader.UploadReport(test.envDatabaseId)
+			err := loader.UploadReport(test.envDatabaseId, test.filePath)
 
 			// Check error expectations
 			if err != nil {
@@ -216,10 +246,13 @@ func TestUploadReport(t *testing.T) {
 							}
 						}
 					} else {
-						if diff := cmp.Diff(test.wantError.Error(), err.Error(),
-							cmpopts.EquateErrors(),
-						); diff != "" {
-							t.Fatalf("Mistach (-want +got):\n%s", diff)
+						// Use strings.Contains for partial error matching
+						if !strings.Contains(err.Error(), test.wantError.Error()) {
+							if diff := cmp.Diff(test.wantError.Error(), err.Error(),
+								cmpopts.EquateErrors(),
+							); diff != "" {
+								t.Fatalf("Mistach (-want +got):\n%s", diff)
+							}
 						}
 					}
 				} else {
@@ -243,6 +276,11 @@ func TestUploadReport(t *testing.T) {
 				t.Error("unexpected UpsertDatabaseProperties func call")
 			} else if test.wantUpsertProperties != nil && upsertCalled == false {
 				t.Error("expected UpsertDatabaseProperties func to be called, but it was not.")
+			}
+
+			// Verify page creation calls
+			if createPageCalls != test.wantCreatePageCalls {
+				t.Errorf("expected %d CreatePage calls, got %d", test.wantCreatePageCalls, createPageCalls)
 			}
 		})
 	}
