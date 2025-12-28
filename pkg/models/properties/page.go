@@ -62,3 +62,14 @@ func TransactionIDProperty(transactionID string) notion.DatabasePageProperty {
 		},
 	}
 }
+
+func TitleProperty(title string) notion.DatabasePageProperty {
+	return notion.DatabasePageProperty{
+		Title: []notion.RichText{
+			{
+				Type: "text",
+				Text: &notion.Text{Content: title},
+			},
+		},
+	}
+}

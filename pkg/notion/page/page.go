@@ -17,7 +17,6 @@ type PageClient interface {
 }
 
 type PageData struct {
-	Title      string
 	DatabaseId string
 	Properties *notion.DatabasePageProperties
 }
@@ -37,7 +36,6 @@ func (p *Page) SearchPages(pageId string) (*notion.Page, error) {
 
 func (p *Page) BuildPage(databaseID string, statement statement.Statement) PageData {
 	return PageData{
-		Title:      strings.Join([]string{string(statement.Operation), statement.Destination}, "-"),
 		DatabaseId: databaseID,
 		Properties: BuildPageProperties(statement),
 	}
@@ -48,7 +46,6 @@ func (p *Page) CreatePageParams(pageData PageData) notion.CreatePageParams {
 		ParentType:             notion.ParentTypeDatabase,
 		ParentID:               pageData.DatabaseId,
 		DatabasePageProperties: pageData.Properties,
-		Title:                  []notion.RichText{{PlainText: pageData.Title}},
 	}
 }
 
@@ -64,7 +61,9 @@ func (p *Page) CreatePage(pageData PageData) error {
 }
 
 func BuildPageProperties(statement statement.Statement) *notion.DatabasePageProperties {
+	title := strings.Join([]string{string(statement.Operation), statement.Destination}, "-")
 	return &notion.DatabasePageProperties{
+		"Name":             properties.TitleProperty(title), // Title property - the page name in the database
 		"Transaction Date": properties.TransactionDateProperty(statement.TransactionDate),
 		"Operation":        properties.OperationProperty(statement.Operation),
 		"Destination":      properties.DestinationProperty(statement.Destination),
