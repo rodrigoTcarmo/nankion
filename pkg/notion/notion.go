@@ -28,35 +28,12 @@ func NewNotionLoader() *Notion {
 
 // UploadReport uploads a report to the Notion database
 func (n *Notion) UploadReport(databaseID, filePath string) error {
-	_, err := n.database.GetDatabase(databaseID)
-	if err != nil {
-		return fmt.Errorf("error trying to get database by ID: %s", err)
+	if err := n.validateDatabase(databaseID); err != nil {
+		return fmt.Errorf("error trying to validate database: %s", err)
 	}
 
-	// 2 - Check if all properties are created and exists in the database
-	databaseProperties, err := n.database.ListDatabaseProperties(databaseID)
-	if err != nil {
-		return fmt.Errorf("error trying to list database properties: %s", err)
-	}
-
-	var existentProperties = map[string]notion.DatabasePropertyType{}
-	for _, property := range databaseProperties {
-		existentProperties[property.Name] = property.Type
-	}
-
-	// Create a copy of RequiredProperties to track missing ones
-	missingProperties := make(map[string]*notion.DatabaseProperty)
-	for reqPropName, reqProp := range properties.RequiredProperties {
-		if propType, ok := existentProperties[reqPropName]; !ok || propType != reqProp.Type {
-			missingProperties[reqPropName] = reqProp
-		}
-	}
-
-	if len(missingProperties) > 0 {
-		err := n.database.UpsertDatabaseProperties(databaseID, missingProperties)
-		if err != nil {
-			return fmt.Errorf("error trying to upsert new database properties: %s", err)
-		}
+	if err := n.validateDatabaseProperties(databaseID); err != nil {
+		return fmt.Errorf("error trying to validate database properties: %s", err)
 	}
 
 	report, err := statement.LoadReport(filePath)
@@ -75,11 +52,65 @@ func (n *Notion) uploadPages(databaseID string, report *statement.Report) error 
 	var errs []error
 	for _, statement := range report.Statements {
 		newPage := n.page.BuildPage(databaseID, statement)
-		err := n.page.CreatePage(newPage)
-		if err != nil {
+		if err := n.page.CreatePage(newPage); err != nil {
 			errs = append(errs, fmt.Errorf("error trying to create page for %s: %w", statement.Destination, err))
 		}
 	}
 
 	return errors.Join(errs...)
+}
+
+func (n *Notion) validateDatabase(databaseID string) error {
+	_, err := n.database.GetDatabase(databaseID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (n *Notion) validateDatabaseProperties(databaseID string) error {
+	existentProperties, err := n.getExistentProperties(databaseID)
+	if err != nil {
+		return err
+	}
+
+	missingProperties := n.mapMissingProperties(existentProperties)
+
+	if len(missingProperties) == 0 {
+		return nil
+	}
+
+	return n.upsertDatabaseProperties(databaseID, missingProperties)
+}
+
+func (n *Notion) getExistentProperties(databaseID string) (map[string]notion.DatabasePropertyType, error) {
+	databaseProperties, err := n.database.ListDatabaseProperties(databaseID)
+	if err != nil {
+		return nil, fmt.Errorf("error trying to list database properties: %s", err)
+	}
+
+	var existentProperties = map[string]notion.DatabasePropertyType{}
+	for _, property := range databaseProperties {
+		existentProperties[property.Name] = property.Type
+	}
+	return existentProperties, nil
+}
+
+func (n *Notion) mapMissingProperties(existentProperties map[string]notion.DatabasePropertyType) map[string]*notion.DatabaseProperty {
+	missingProperties := make(map[string]*notion.DatabaseProperty)
+	for reqPropName, reqProp := range properties.RequiredProperties {
+		if propType, ok := existentProperties[reqPropName]; !ok || propType != reqProp.Type {
+			missingProperties[reqPropName] = reqProp
+		}
+	}
+
+	return missingProperties
+}
+
+func (n *Notion) upsertDatabaseProperties(databaseID string, missingProperties map[string]*notion.DatabaseProperty) error {
+	if err := n.database.UpsertDatabaseProperties(databaseID, missingProperties); err != nil {
+		return fmt.Errorf("error trying to upsert new database properties: %s", err)
+	}
+
+	return nil
 }
