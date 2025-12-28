@@ -3,6 +3,8 @@ package statement
 import (
 	"fmt"
 	"time"
+
+	"github.com/rodrigoTcarmo/nankion/pkg/models/ofx"
 )
 
 type Report struct {
@@ -12,8 +14,8 @@ type Report struct {
 
 // Statement represents a bank transaction from an OFX statement.
 type Statement struct {
-	TransactionDate time.Time 
-	Operation       string
+	TransactionDate time.Time
+	Operation       ofx.OFXOperationType
 	Destination     string
 	Amount          float64
 	Memo            string
