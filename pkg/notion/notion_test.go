@@ -200,8 +200,8 @@ func TestUploadReport(t *testing.T) {
 			// Setup page mock with call tracking
 			var mockPage *pagemock.MockPageClient
 			mockPage = &pagemock.MockPageClient{
-				BuildPageFunc: func(dbID string, stmt statement.Statement) page.PageData {
-					return page.PageData{DatabaseId: dbID}
+				BuildPageFunc: func(dbID string, stmt statement.Statement) (*page.PageData, error) {
+					return &page.PageData{DatabaseId: dbID}, nil
 				},
 				CreatePageFunc: func(pageData page.PageData) error {
 					createPageCalls++
