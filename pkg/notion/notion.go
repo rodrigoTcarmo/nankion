@@ -51,8 +51,12 @@ func (n *Notion) UploadReport(databaseID, filePath string) error {
 func (n *Notion) uploadPages(databaseID string, report *statement.Report) error {
 	var errs []error
 	for _, statement := range report.Statements {
-		newPage := n.page.BuildPage(databaseID, statement)
-		if err := n.page.CreatePage(newPage); err != nil {
+		newPage, err := n.page.BuildPage(databaseID, statement)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("error trying to build page for %s: %w", statement.Destination, err))
+			continue
+		}
+		if err := n.page.CreatePage(*newPage); err != nil {
 			errs = append(errs, fmt.Errorf("error trying to create page for %s: %w", statement.Destination, err))
 		}
 	}

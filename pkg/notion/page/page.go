@@ -11,14 +11,11 @@ import (
 	"github.com/rodrigoTcarmo/nankion/pkg/statement"
 )
 
-type PageClient interface {
-	SearchPages(string) (*notion.Page, error)
-	CreatePage(string, string, *notion.DatabasePageProperties) error
-}
-
 type Page interface {
-	BuildPage(databaseID string, statement statement.Statement) PageData
-	CreatePage(pageData PageData) error
+	SearchPages(string) (*notion.Page, error)
+	BuildPage(string, statement.Statement) (*PageData, error)
+	CreatePage(PageData) error
+	ValidatePageDuplicity(string) (*notion.SearchResponse, error)
 }
 
 type PageData struct {
@@ -39,11 +36,32 @@ func (p *page) SearchPages(pageId string) (*notion.Page, error) {
 	return &pageFound, nil
 }
 
-func (p *page) BuildPage(databaseID string, statement statement.Statement) PageData {
-	return PageData{
-		DatabaseId: databaseID,
-		Properties: BuildPageProperties(statement),
+func (p *page) BuildPage(databaseID string, statement statement.Statement) (*PageData, error) {
+	properties, err := p.BuildPageProperties(statement)
+	if err != nil {
+		return nil, err
 	}
+
+	pageData := &PageData{
+		DatabaseId: databaseID,
+		Properties: properties,
+	}
+	return pageData, nil
+}
+
+func (p *page) ValidatePageDuplicity(query string) (*notion.SearchResponse, error) {
+	searchResponse, err := p.client.Search(context.Background(), &notion.SearchOpts{
+		Query: query,
+		Filter: &notion.SearchFilter{
+			Property: "object",
+			Value:    "page",
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error trying to search page by transaction ID: %v", err)
+	}
+
+	return &searchResponse, nil
 }
 
 func (p *page) CreatePageParams(pageData PageData) notion.CreatePageParams {
@@ -65,8 +83,18 @@ func (p *page) CreatePage(pageData PageData) error {
 	return nil
 }
 
-func BuildPageProperties(statement statement.Statement) *notion.DatabasePageProperties {
-	title := strings.Join([]string{string(statement.Operation), statement.Destination}, "-")
+func (p *page) BuildPageProperties(statement statement.Statement) (*notion.DatabasePageProperties, error) {
+	
+	searchResponse, err := p.ValidatePageDuplicity(statement.TransactionID)
+	if err != nil {
+		return nil, fmt.Errorf("error trying to validate page duplicity: %v", err)
+	}
+	
+	if len(searchResponse.Results) > 0 {
+		return nil, fmt.Errorf("page already exists")
+	}
+	
+	title := strings.Join([]string{string(statement.Operation), statement.Destination, statement.TransactionID}, "-")
 	return &notion.DatabasePageProperties{
 		"Name":             properties.TitleProperty(title),
 		"Transaction Date": properties.TransactionDateProperty(statement.TransactionDate),
@@ -75,10 +103,10 @@ func BuildPageProperties(statement statement.Statement) *notion.DatabasePageProp
 		"Amount":           properties.AmountProperty(statement.Amount),
 		"Memo":             properties.MemoProperty(statement.Memo),
 		"Transaction ID":   properties.TransactionIDProperty(statement.TransactionID),
-	}
+	}, nil
 }
 
-func NewPage() *page {
+func NewPage() Page {
 	return &page{
 		client: notionclient.NewClient(),
 	}
