@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	nankionNotion "github.com/rodrigoTcarmo/nankion/pkg/notion"
 	notiondatabase "github.com/rodrigoTcarmo/nankion/pkg/notion/database"
 	"github.com/rodrigoTcarmo/nankion/pkg/statement"
 	"github.com/spf13/cobra"
@@ -73,13 +74,29 @@ func main() {
 			if err != nil {
 				fmt.Printf("Error fetching database properties: %s\n", err)
 				return
-			}	
+			}
 			fmt.Println("Database properties\n", database)
+		},
+	}
+
+	updateDatabaseProperty := &cobra.Command{
+		Use:   "update-property",
+		Short: "Get a Notion database properties by ID",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			databaseID := args[0]
+			fmt.Println("Updating database property")
+			nl := nankionNotion.NewNotionLoader()
+			err := nl.UploadReport(databaseID)
+			if err != nil {
+				fmt.Println("Error trying to update database: ", err)
+			}
 		},
 	}
 
 	databaseCmd.AddCommand(getDatabaseCmd)
 	databaseCmd.AddCommand(listDatabasePropertiesCmd)
+	databaseCmd.AddCommand(updateDatabaseProperty)
 
 	reportCmd.AddCommand(printReportCmd)
 
