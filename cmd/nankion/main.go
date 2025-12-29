@@ -6,7 +6,6 @@ import (
 
 	nankionNotion "github.com/rodrigoTcarmo/nankion/pkg/notion"
 	notiondatabase "github.com/rodrigoTcarmo/nankion/pkg/notion/database"
-	"github.com/rodrigoTcarmo/nankion/pkg/statement"
 	"github.com/spf13/cobra"
 )
 
@@ -27,22 +26,6 @@ func main() {
 	reportCmd := &cobra.Command{
 		Use:   "report",
 		Short: "Manage your reports",
-	}
-
-	printReportCmd := &cobra.Command{
-		Use:   "print [ofx-filepath]",
-		Short: "Print a report from an OFX file",
-		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			filepath := args[0]
-			fmt.Printf("Printing report from: %s\n", filepath)
-			report, err := statement.LoadReport(filepath)
-			if err != nil {
-				fmt.Printf("Error loading report: %s\n", err)
-				return
-			}
-			fmt.Println("Statements\n", report.Statements)
-		},
 	}
 
 	getDatabaseCmd := &cobra.Command{
@@ -80,7 +63,7 @@ func main() {
 	}
 
 	uploadStatement := &cobra.Command{
-		Use:   "upload-statement [database-id] [statement-filepath]",
+		Use:   "upload [database-id] [statement-filepath]",
 		Short: "Upload finantial statement to Notion",
 		Args:  cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -97,8 +80,7 @@ func main() {
 
 	databaseCmd.AddCommand(getDatabaseCmd)
 	databaseCmd.AddCommand(listDatabasePropertiesCmd)
-	databaseCmd.AddCommand(uploadStatement)
-	reportCmd.AddCommand(printReportCmd)
+	reportCmd.AddCommand(uploadStatement)
 
 	rootCmd.AddCommand(databaseCmd)
 	rootCmd.AddCommand(reportCmd)
