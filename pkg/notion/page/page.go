@@ -12,10 +12,8 @@ import (
 )
 
 type Page interface {
-	SearchPages(string) (*notion.Page, error)
 	BuildPage(string, statement.Statement) (*PageData, error)
 	CreatePage(PageData) error
-	ValidatePageDuplicity(string) (*notion.SearchResponse, error)
 }
 
 type PageData struct {
@@ -25,15 +23,6 @@ type PageData struct {
 
 type page struct {
 	client *notion.Client
-}
-
-func (p *page) SearchPages(pageId string) (*notion.Page, error) {
-	pageFound, err := p.client.FindPageByID(context.Background(), pageId)
-	if err != nil {
-		return nil, fmt.Errorf("error trying to find page by ID: %v", err)
-	}
-
-	return &pageFound, nil
 }
 
 func (p *page) BuildPage(databaseID string, statement statement.Statement) (*PageData, error) {
@@ -49,7 +38,7 @@ func (p *page) BuildPage(databaseID string, statement statement.Statement) (*Pag
 	return pageData, nil
 }
 
-func (p *page) ValidatePageDuplicity(query string) (*notion.SearchResponse, error) {
+func (p *page) validatePageDuplicity(query string) (*notion.SearchResponse, error) {
 	searchResponse, err := p.client.Search(context.Background(), &notion.SearchOpts{
 		Query: query,
 		Filter: &notion.SearchFilter{
@@ -85,7 +74,7 @@ func (p *page) CreatePage(pageData PageData) error {
 
 func (p *page) BuildPageProperties(statement statement.Statement) (*notion.DatabasePageProperties, error) {
 	
-	searchResponse, err := p.ValidatePageDuplicity(statement.TransactionID)
+	searchResponse, err := p.validatePageDuplicity(statement.TransactionID)
 	if err != nil {
 		return nil, fmt.Errorf("error trying to validate page duplicity: %v", err)
 	}

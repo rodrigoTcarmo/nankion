@@ -5,7 +5,6 @@ import (
 	"os"
 
 	nankionNotion "github.com/rodrigoTcarmo/nankion/pkg/notion"
-	notionpage "github.com/rodrigoTcarmo/nankion/pkg/notion/page"
 	notiondatabase "github.com/rodrigoTcarmo/nankion/pkg/notion/database"
 	"github.com/rodrigoTcarmo/nankion/pkg/statement"
 	"github.com/spf13/cobra"
@@ -95,25 +94,10 @@ func main() {
 			}
 		},
 	}
-	searchStatement := &cobra.Command{
-		Use:   "search-statement [transaction-id]",
-		Short: "Search statement by transaction ID",
-		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			transactionID := args[0]
-			np := notionpage.NewPage()
-			searchResponse, err := np.ValidatePageDuplicity(transactionID)
-			if err != nil {
-				fmt.Println("Error trying to search page by transaction ID: ", err)
-			}
-			fmt.Println("Search response\n", searchResponse)
-		},
-	}
 
 	databaseCmd.AddCommand(getDatabaseCmd)
 	databaseCmd.AddCommand(listDatabasePropertiesCmd)
 	databaseCmd.AddCommand(uploadStatement)
-	databaseCmd.AddCommand(searchStatement)
 	reportCmd.AddCommand(printReportCmd)
 
 	rootCmd.AddCommand(databaseCmd)
