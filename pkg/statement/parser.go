@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aclindsa/ofxgo"
+	"github.com/rodrigoTcarmo/nankion/pkg/models/ofx"
 )
 
 // ParseOFXDate parses an OFX date string in "YYYYMMDD" or "YYYYMMDDHHMMSS" format.
@@ -35,7 +36,7 @@ func parseTransactions(transactions []ofxgo.Transaction) ([]Statement, error) {
 
 		statements = append(statements, Statement{
 			TransactionDate: date,
-			Operation:       transaction.TrnType.String(),
+			Operation:       ofx.OFXOperationType(transaction.TrnType.String()),
 			Destination:     transaction.Name.String(),
 			Amount:          amount,
 			Memo:            transaction.Memo.String(),
