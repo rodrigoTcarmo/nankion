@@ -74,7 +74,7 @@ func main() {
 			filePath := args[1]
 			slog.Info("Uploading statement...")
 			nl := nankionNotion.NewNotionLoader()
-			err := nl.UploadReport(databaseID, filePath)
+			err := nl.UploadStatement(databaseID, filePath)
 			if err != nil {
 				slog.Info("Error trying to update database: ", err)
 			}

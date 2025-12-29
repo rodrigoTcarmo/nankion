@@ -27,8 +27,8 @@ func NewNotionLoader() *Notion {
 	}
 }
 
-// UploadReport uploads a report to the Notion database
-func (n *Notion) UploadReport(databaseID, filePath string) error {
+// UploadStatement uploads a report to the Notion database
+func (n *Notion) UploadStatement(databaseID, filePath string) error {
 	if err := n.validateDatabase(databaseID); err != nil {
 		return fmt.Errorf("error trying to validate database: %s", err)
 	}
