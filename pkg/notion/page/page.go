@@ -2,7 +2,6 @@ package page
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/dstotijn/go-notion"
@@ -38,21 +37,6 @@ func (p *page) BuildPage(databaseID string, statement statement.Statement) (*Pag
 	return pageData, nil
 }
 
-func (p *page) validatePageDuplicity(query string) (*notion.SearchResponse, error) {
-	searchResponse, err := p.client.Search(context.Background(), &notion.SearchOpts{
-		Query: query,
-		Filter: &notion.SearchFilter{
-			Property: "object",
-			Value:    "page",
-		},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error trying to search page by transaction ID: %v", err)
-	}
-
-	return &searchResponse, nil
-}
-
 func (p *page) CreatePageParams(pageData PageData) notion.CreatePageParams {
 	return notion.CreatePageParams{
 		ParentType:             notion.ParentTypeDatabase,
@@ -73,15 +57,6 @@ func (p *page) CreatePage(pageData PageData) error {
 }
 
 func (p *page) BuildPageProperties(statement statement.Statement) (*notion.DatabasePageProperties, error) {
-	searchResponse, err := p.validatePageDuplicity(statement.TransactionID)
-	if err != nil {
-		return nil, fmt.Errorf("error trying to validate page duplicity: %v", err)
-	}
-
-	if len(searchResponse.Results) > 0 {
-		fmt.Printf("Warning! Transaction %s may already exist!\n", statement.TransactionID)
-	}
-	
 	title := strings.Join([]string{string(statement.Operation), statement.Destination, statement.TransactionID}, "-")
 	return &notion.DatabasePageProperties{
 		"Name":             properties.TitleProperty(title),
