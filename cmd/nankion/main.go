@@ -85,9 +85,10 @@ func main() {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			databaseID := args[0]
+			filePath := args[1]
 			fmt.Println("Updating database property")
 			nl := nankionNotion.NewNotionLoader()
-			err := nl.UploadReport(databaseID)
+			err := nl.UploadReport(databaseID, filePath)
 			if err != nil {
 				fmt.Println("Error trying to update database: ", err)
 			}
