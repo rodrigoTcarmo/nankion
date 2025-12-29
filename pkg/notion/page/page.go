@@ -16,16 +16,21 @@ type PageClient interface {
 	CreatePage(string, string, *notion.DatabasePageProperties) error
 }
 
+type Page interface {
+	BuildPage(databaseID string, statement statement.Statement) PageData
+	CreatePage(pageData PageData) error
+}
+
 type PageData struct {
 	DatabaseId string
 	Properties *notion.DatabasePageProperties
 }
 
-type Page struct {
+type page struct {
 	client *notion.Client
 }
 
-func (p *Page) SearchPages(pageId string) (*notion.Page, error) {
+func (p *page) SearchPages(pageId string) (*notion.Page, error) {
 	pageFound, err := p.client.FindPageByID(context.Background(), pageId)
 	if err != nil {
 		return nil, fmt.Errorf("error trying to find page by ID: %v", err)
@@ -34,14 +39,14 @@ func (p *Page) SearchPages(pageId string) (*notion.Page, error) {
 	return &pageFound, nil
 }
 
-func (p *Page) BuildPage(databaseID string, statement statement.Statement) PageData {
+func (p *page) BuildPage(databaseID string, statement statement.Statement) PageData {
 	return PageData{
 		DatabaseId: databaseID,
 		Properties: BuildPageProperties(statement),
 	}
 }
 
-func (p *Page) CreatePageParams(pageData PageData) notion.CreatePageParams {
+func (p *page) CreatePageParams(pageData PageData) notion.CreatePageParams {
 	return notion.CreatePageParams{
 		ParentType:             notion.ParentTypeDatabase,
 		ParentID:               pageData.DatabaseId,
@@ -49,7 +54,7 @@ func (p *Page) CreatePageParams(pageData PageData) notion.CreatePageParams {
 	}
 }
 
-func (p *Page) CreatePage(pageData PageData) error {
+func (p *page) CreatePage(pageData PageData) error {
 	pageParams := p.CreatePageParams(pageData)
 
 	_, err := p.client.CreatePage(context.Background(), pageParams)
@@ -63,7 +68,7 @@ func (p *Page) CreatePage(pageData PageData) error {
 func BuildPageProperties(statement statement.Statement) *notion.DatabasePageProperties {
 	title := strings.Join([]string{string(statement.Operation), statement.Destination}, "-")
 	return &notion.DatabasePageProperties{
-		"Name":             properties.TitleProperty(title), // Title property - the page name in the database
+		"Name":             properties.TitleProperty(title),
 		"Transaction Date": properties.TransactionDateProperty(statement.TransactionDate),
 		"Operation":        properties.OperationProperty(statement.Operation),
 		"Destination":      properties.DestinationProperty(statement.Destination),
@@ -73,8 +78,8 @@ func BuildPageProperties(statement statement.Statement) *notion.DatabasePageProp
 	}
 }
 
-func NewPage() Page {
-	return Page{
+func NewPage() *page {
+	return &page{
 		client: notionclient.NewClient(),
 	}
 }
