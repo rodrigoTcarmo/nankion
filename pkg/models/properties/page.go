@@ -9,24 +9,15 @@ import (
 
 func TransactionDateProperty(date time.Time) notion.DatabasePageProperty {
 	notionDate := notion.NewDateTime(date, false)
-	tz := "America/Sao_Paulo"
 	return notion.DatabasePageProperty{
-		ID:   "transaction_date",
-		Name: "Transaction Date",
-		Type: notion.DBPropTypeDate,
 		Date: &notion.Date{
-			Start:    notionDate,
-			End:      &notionDate,
-			TimeZone: &tz,
+			Start: notionDate,
 		},
 	}
 }
 
 func OperationProperty(operationType ofx.OFXOperationType) notion.DatabasePageProperty {
 	return notion.DatabasePageProperty{
-		ID:   "operation",
-		Name: "Operation",
-		Type: notion.DBPropTypeSelect,
 		Select: &notion.SelectOptions{
 			Name: string(operationType),
 		},
@@ -35,9 +26,6 @@ func OperationProperty(operationType ofx.OFXOperationType) notion.DatabasePagePr
 
 func DestinationProperty(destination string) notion.DatabasePageProperty {
 	return notion.DatabasePageProperty{
-		ID:   "destination",
-		Name: "Destination",
-		Type: notion.DBPropTypeRichText,
 		RichText: []notion.RichText{
 			{
 				Type: "text",
@@ -49,18 +37,12 @@ func DestinationProperty(destination string) notion.DatabasePageProperty {
 
 func AmountProperty(amount float64) notion.DatabasePageProperty {
 	return notion.DatabasePageProperty{
-		ID:   "amount",
-		Name: "Amount",
-		Type: notion.DBPropTypeNumber,
 		Number: &amount,
 	}
 }
 
 func MemoProperty(memo string) notion.DatabasePageProperty {
 	return notion.DatabasePageProperty{
-		ID:   "memo",
-		Name: "Memo",
-		Type: notion.DBPropTypeRichText,
 		RichText: []notion.RichText{
 			{
 				Type: "text",
@@ -72,9 +54,6 @@ func MemoProperty(memo string) notion.DatabasePageProperty {
 
 func TransactionIDProperty(transactionID string) notion.DatabasePageProperty {
 	return notion.DatabasePageProperty{
-		ID:   "transaction_id",
-		Name: "Transaction ID",
-		Type: notion.DBPropTypeRichText,
 		RichText: []notion.RichText{
 			{
 				Type: "text",
