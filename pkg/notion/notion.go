@@ -58,6 +58,8 @@ func (n *Notion) uploadPages(databaseID string, report *statement.Report) error 
 		}
 		if err := n.page.CreatePage(*newPage); err != nil {
 			errs = append(errs, fmt.Errorf("error trying to create page for %s: %w", statement.Destination, err))
+		} else {
+			fmt.Println("Page succesfully created: ", statement.Memo)
 		}
 	}
 

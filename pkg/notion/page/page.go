@@ -73,14 +73,13 @@ func (p *page) CreatePage(pageData PageData) error {
 }
 
 func (p *page) BuildPageProperties(statement statement.Statement) (*notion.DatabasePageProperties, error) {
-	
 	searchResponse, err := p.validatePageDuplicity(statement.TransactionID)
 	if err != nil {
 		return nil, fmt.Errorf("error trying to validate page duplicity: %v", err)
 	}
-	
+
 	if len(searchResponse.Results) > 0 {
-		return nil, fmt.Errorf("page already exists")
+		fmt.Printf("Warning! Transaction %s may already exist!\n", statement.TransactionID)
 	}
 	
 	title := strings.Join([]string{string(statement.Operation), statement.Destination, statement.TransactionID}, "-")
