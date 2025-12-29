@@ -453,3 +453,133 @@ func TestUploadPages(t *testing.T) {
 		})
 	}
 }
+
+func TestMapMissingProperties(t *testing.T) {
+	tests := []struct {
+		name               string
+		existentProperties map[string]notion.DatabasePropertyType
+		wantMissing        []string
+	}{
+		{
+			name: "all properties exist with correct types",
+			existentProperties: map[string]notion.DatabasePropertyType{
+				"Transaction Date": notion.DBPropTypeDate,
+				"Operation":        notion.DBPropTypeSelect,
+				"Destination":      notion.DBPropTypeRichText,
+				"Amount":           notion.DBPropTypeNumber,
+				"Memo":             notion.DBPropTypeRichText,
+				"Transaction ID":   notion.DBPropTypeRichText,
+			},
+			wantMissing: []string{},
+		},
+		{
+			name:               "all properties missing",
+			existentProperties: map[string]notion.DatabasePropertyType{},
+			wantMissing:        []string{"Transaction Date", "Operation", "Destination", "Amount", "Memo", "Transaction ID"},
+		},
+		{
+			name: "single property missing",
+			existentProperties: map[string]notion.DatabasePropertyType{
+				"Transaction Date": notion.DBPropTypeDate,
+				"Operation":        notion.DBPropTypeSelect,
+				"Destination":      notion.DBPropTypeRichText,
+				"Amount":           notion.DBPropTypeNumber,
+				"Memo":             notion.DBPropTypeRichText,
+			},
+			wantMissing: []string{"Transaction ID"},
+		},
+		{
+			name: "multiple properties missing",
+			existentProperties: map[string]notion.DatabasePropertyType{
+				"Transaction Date": notion.DBPropTypeDate,
+				"Operation":        notion.DBPropTypeSelect,
+				"Destination":      notion.DBPropTypeRichText,
+			},
+			wantMissing: []string{"Amount", "Memo", "Transaction ID"},
+		},
+		{
+			name: "single property with wrong type",
+			existentProperties: map[string]notion.DatabasePropertyType{
+				"Transaction Date": notion.DBPropTypeDate,
+				"Operation":        notion.DBPropTypeSelect,
+				"Destination":      notion.DBPropTypeRichText,
+				"Amount":           notion.DBPropTypeRichText, // Should be Number
+				"Memo":             notion.DBPropTypeRichText,
+				"Transaction ID":   notion.DBPropTypeRichText,
+			},
+			wantMissing: []string{"Amount"},
+		},
+		{
+			name: "multiple properties with wrong types",
+			existentProperties: map[string]notion.DatabasePropertyType{
+				"Transaction Date": notion.DBPropTypeRichText, // Should be Date
+				"Operation":        notion.DBPropTypeRichText, // Should be Select
+				"Destination":      notion.DBPropTypeRichText,
+				"Amount":           notion.DBPropTypeNumber,
+				"Memo":             notion.DBPropTypeRichText,
+				"Transaction ID":   notion.DBPropTypeRichText,
+			},
+			wantMissing: []string{"Transaction Date", "Operation"},
+		},
+		{
+			name: "mix of missing and wrong type",
+			existentProperties: map[string]notion.DatabasePropertyType{
+				"Transaction Date": notion.DBPropTypeDate,
+				"Operation":        notion.DBPropTypeRichText, // Wrong type
+				"Destination":      notion.DBPropTypeRichText,
+				"Amount":           notion.DBPropTypeNumber,
+				// Memo missing
+				// Transaction ID missing
+			},
+			wantMissing: []string{"Operation", "Memo", "Transaction ID"},
+		},
+		{
+			name: "extra properties in existing should be ignored",
+			existentProperties: map[string]notion.DatabasePropertyType{
+				"Transaction Date": notion.DBPropTypeDate,
+				"Operation":        notion.DBPropTypeSelect,
+				"Destination":      notion.DBPropTypeRichText,
+				"Amount":           notion.DBPropTypeNumber,
+				"Memo":             notion.DBPropTypeRichText,
+				"Transaction ID":   notion.DBPropTypeRichText,
+				"Extra Property":   notion.DBPropTypeCheckbox,
+				"Another Extra":    notion.DBPropTypeURL,
+			},
+			wantMissing: []string{},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			n := &Notion{}
+
+			result := n.mapMissingProperties(test.existentProperties)
+
+			// Verify the count of missing properties
+			if len(result) != len(test.wantMissing) {
+				t.Errorf("expected %d missing properties, got %d", len(test.wantMissing), len(result))
+			}
+
+			// Verify each expected missing property is in the result
+			for _, propName := range test.wantMissing {
+				if _, ok := result[propName]; !ok {
+					t.Errorf("expected property %q to be missing, but it wasn't in the result", propName)
+				}
+			}
+
+			// Verify no unexpected properties are in the result
+			for propName := range result {
+				found := false
+				for _, wantProp := range test.wantMissing {
+					if propName == wantProp {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("unexpected property %q in missing properties result", propName)
+				}
+			}
+		})
+	}
+}
