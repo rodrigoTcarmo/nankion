@@ -23,12 +23,12 @@ func TestUploadReport(t *testing.T) {
 		"Transaction ID":   notion.DatabaseProperty{Name: "Transaction ID", Type: notion.DBPropTypeRichText},
 	}
 	tests := []struct {
-		name                         string
-		envDatabaseId                string
-		mockDatabase                 func(string) (*notion.Database, error)
-		mockDatabaseProperties       func(string) (notion.DatabaseProperties, error)
-		mockUpsertDatabaseProperties func(string, map[string]*notion.DatabaseProperty) error
-		wantError                    error
+		name                   string
+		envDatabaseId          string
+		mockDatabase           func(string) (*notion.Database, error)
+		mockDatabaseProperties func(string) (notion.DatabaseProperties, error)
+		wantError              error
+		wantUpsertProperties   []string
 	}{
 		{
 			name:          "get all expected properties from notion",
@@ -66,11 +66,6 @@ func TestUploadReport(t *testing.T) {
 			wantError: nil,
 		},
 		{
-			name:          "return error if DATABASE_ID env var is empty",
-			envDatabaseId: "",
-			wantError:     errors.New("database ID not found in environment variables"),
-		},
-		{
 			name:          "return error if database does not exist",
 			envDatabaseId: databaseId,
 			mockDatabase: func(databaseId string) (*notion.Database, error) {
@@ -90,7 +85,7 @@ func TestUploadReport(t *testing.T) {
 			wantError: errors.New("error trying to list database properties: unauthorized access"),
 		},
 		{
-			name:          "return error if all properties are missing",
+			name:          "create all properties when all are missing",
 			envDatabaseId: databaseId,
 			mockDatabase: func(databaseId string) (*notion.Database, error) {
 				return &notion.Database{
@@ -100,10 +95,11 @@ func TestUploadReport(t *testing.T) {
 			mockDatabaseProperties: func(databaseId string) (notion.DatabaseProperties, error) {
 				return notion.DatabaseProperties{}, nil
 			},
-			wantError: errors.New("missing properties: [Transaction Date Operation Destination Amount Memo Transaction ID]"),
+			wantError:            nil,
+			wantUpsertProperties: []string{"Transaction Date", "Operation", "Destination", "Amount", "Memo", "Transaction ID"},
 		},
 		{
-			name:          "return error if Transaction ID property is missing",
+			name:          "create Transaction ID property when it is missing",
 			envDatabaseId: databaseId,
 			mockDatabase: func(databaseId string) (*notion.Database, error) {
 				return &notion.Database{
@@ -119,10 +115,11 @@ func TestUploadReport(t *testing.T) {
 					"Memo":             notion.DatabaseProperty{Name: "Memo", Type: notion.DBPropTypeRichText},
 				}, nil
 			},
-			wantError: errors.New("missing properties: [Transaction ID]"),
+			wantError:            nil,
+			wantUpsertProperties: []string{"Transaction ID"},
 		},
 		{
-			name:          "return error if multiple properties are missing",
+			name:          "create multiple properties when they are missing",
 			envDatabaseId: databaseId,
 			mockDatabase: func(databaseId string) (*notion.Database, error) {
 				return &notion.Database{ID: databaseId}, nil
@@ -134,10 +131,11 @@ func TestUploadReport(t *testing.T) {
 					"Destination":      notion.DatabaseProperty{Name: "Destination", Type: notion.DBPropTypeRichText},
 				}, nil
 			},
-			wantError: errors.New("missing properties: [Amount Memo Transaction ID]"),
+			wantError:            nil,
+			wantUpsertProperties: []string{"Amount", "Memo", "Transaction ID"},
 		},
 		{
-			name:          "return error if property exists but with wrong type",
+			name:          "create property when it exists but with wrong type",
 			envDatabaseId: databaseId,
 			mockDatabase: func(databaseId string) (*notion.Database, error) {
 				return &notion.Database{ID: databaseId}, nil
@@ -152,10 +150,11 @@ func TestUploadReport(t *testing.T) {
 					"Transaction ID":   notion.DatabaseProperty{Name: "Transaction ID", Type: notion.DBPropTypeRichText},
 				}, nil
 			},
-			wantError: errors.New("missing properties: [Amount]"),
+			wantError:            nil,
+			wantUpsertProperties: []string{"Amount"},
 		},
 		{
-			name:          "return error if multiple properties have wrong types",
+			name:          "create multiple properties when they have wrong types",
 			envDatabaseId: databaseId,
 			mockDatabase: func(databaseId string) (*notion.Database, error) {
 				return &notion.Database{ID: databaseId}, nil
@@ -170,23 +169,35 @@ func TestUploadReport(t *testing.T) {
 					"Transaction ID":   notion.DatabaseProperty{Name: "Transaction ID", Type: notion.DBPropTypeRichText},
 				}, nil
 			},
-			wantError: errors.New("missing properties: [Transaction Date Operation]"),
+			wantError:            nil,
+			wantUpsertProperties: []string{"Transaction Date", "Operation"},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			upsertCalled := false
+			var upsertedProperties map[string]*notion.DatabaseProperty
+
+			mockUpsert := func(databaseId string, properties map[string]*notion.DatabaseProperty) error {
+				upsertCalled = true
+				upsertedProperties = properties
+				return nil
+			}
+
 			loader := &Notion{
 				database: &databasemock.MockDatabaseClient{
 					GetDatabaseFunc:              test.mockDatabase,
 					ListDatabasePropertiesFunc:   test.mockDatabaseProperties,
-					UpsertDatabasePropertiesFunc: test.mockUpsertDatabaseProperties,
+					UpsertDatabasePropertiesFunc: mockUpsert,
 				},
 			}
 
 			os.Setenv("DATABASE_ID", test.envDatabaseId)
 
 			err := loader.UploadReport(test.envDatabaseId)
+
+			// Check error expectations
 			if err != nil {
 				if test.wantError != nil {
 
@@ -216,6 +227,22 @@ func TestUploadReport(t *testing.T) {
 				}
 			} else if test.wantError != nil {
 				t.Errorf("expected %v error, got nil", test.wantError)
+			}
+
+			// Verify the correct properties were passed to upsert
+			if test.wantUpsertProperties != nil && upsertCalled {
+				if len(upsertedProperties) != len(test.wantUpsertProperties) {
+					t.Errorf("expected %d properties to be upserted, got %d", len(test.wantUpsertProperties), len(upsertedProperties))
+				}
+				for _, propName := range test.wantUpsertProperties {
+					if _, ok := upsertedProperties[propName]; !ok {
+						t.Errorf("expected property %s to be upserted, but it wasn't", propName)
+					}
+				}
+			} else if test.wantUpsertProperties == nil && upsertCalled {
+				t.Error("unexpected UpsertDatabaseProperties func call")
+			} else if test.wantUpsertProperties != nil && upsertCalled == false {
+				t.Error("expected UpsertDatabaseProperties func to be called, but it was not.")
 			}
 		})
 	}

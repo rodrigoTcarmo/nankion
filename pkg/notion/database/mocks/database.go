@@ -28,8 +28,8 @@ func (m *MockDatabaseClient) ListDatabaseProperties(databaseID string) (notion.D
 }
 
 func (m *MockDatabaseClient) UpsertDatabaseProperties(databaseID string, properties map[string]*notion.DatabaseProperty) error {
-	if m.ListDatabasePropertiesFunc != nil {
-		return m.UpsertDatabaseProperties(databaseID, properties)
+	if m.UpsertDatabasePropertiesFunc != nil {
+		return m.UpsertDatabasePropertiesFunc(databaseID, properties)
 	}
-	return errors.New("UpsertDatabaseProperties not set")
+	return errors.New("UpsertDatabasePropertiesFunc not set")
 }
