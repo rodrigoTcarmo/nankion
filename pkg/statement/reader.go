@@ -31,6 +31,7 @@ func CreateReport(response *ofxgo.Response) (*Report, error) {
 		finalBalance float64
 	)
 
+	// Process bank statements
 	for _, msg := range response.Bank {
 		statementResponse, ok := msg.(*ofxgo.StatementResponse)
 		if !ok {
@@ -45,6 +46,25 @@ func CreateReport(response *ofxgo.Response) (*Report, error) {
 			return nil, fmt.Errorf("unable to parse transactions: %w", err)
 		}
 	}
+
+	// Process credit card statements
+	for _, msg := range response.CreditCard {
+		ccStatementResponse, ok := msg.(*ofxgo.CCStatementResponse)
+		if !ok {
+			continue
+		}
+		// Get final balance from LEDGERBAL
+		finalBalance, _ = ccStatementResponse.BalAmt.Float64()
+
+		if ccStatementResponse.BankTranList != nil {
+			var err error
+			statements, err = parseTransactions(ccStatementResponse.BankTranList.Transactions)
+			if err != nil {
+				return nil, fmt.Errorf("unable to parse credit card transactions: %w", err)
+			}
+		}
+	}
+
 	return &Report{
 		Statements:   statements,
 		FinalBalance: finalBalance,
