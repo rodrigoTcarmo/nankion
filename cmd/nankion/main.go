@@ -1,20 +1,23 @@
 package main
 
 import (
-	"fmt"
+	"log/slog"
 	"os"
 
+	"github.com/rodrigoTcarmo/nankion/pkg/log"
 	nankionNotion "github.com/rodrigoTcarmo/nankion/pkg/notion"
 	notiondatabase "github.com/rodrigoTcarmo/nankion/pkg/notion/database"
 	"github.com/spf13/cobra"
 )
 
 func main() {
+	log.Init()
+	defer log.Close()
 	rootCmd := &cobra.Command{
 		Use:   "nankion",
 		Short: "Nankion is a tool for managing your Notion databases",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("Hello, Nankion!")
+			slog.Info("Hello, Nankion!")
 		},
 	}
 
@@ -34,14 +37,14 @@ func main() {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			databaseID := args[0]
-			fmt.Printf("Fetching database: %s\n", databaseID)
+			slog.Info("Fetching database", "databaseID", databaseID)
 			databaseCLI := notiondatabase.NewDatabase()
 			database, err := databaseCLI.GetDatabase(databaseID)
 			if err != nil {
-				fmt.Printf("Error fetching database: %s\n", err)
+				slog.Error("Error fetching database", "error", err.Error())
 				return
 			}
-			fmt.Println("Database\n", database)
+			slog.Info("Database info", "database", database)
 		},
 	}
 
@@ -51,14 +54,14 @@ func main() {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			databaseID := args[0]
-			fmt.Printf("Fetching database properties: %s\n", databaseID)
+			slog.Info("Fetching database properties", "databaseID", databaseID)
 			databaseCLI := notiondatabase.NewDatabase()
 			database, err := databaseCLI.ListDatabaseProperties(databaseID)
 			if err != nil {
-				fmt.Printf("Error fetching database properties: %s\n", err)
+				slog.Error("error fetching database properties", "error", err.Error())
 				return
 			}
-			fmt.Println("Database properties\n", database)
+			slog.Info("Database properties", "properties", database)
 		},
 	}
 
@@ -69,11 +72,11 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			databaseID := args[0]
 			filePath := args[1]
-			fmt.Println("Uploading statement...")
+			slog.Info("Uploading statement...")
 			nl := nankionNotion.NewNotionLoader()
 			err := nl.UploadReport(databaseID, filePath)
 			if err != nil {
-				fmt.Println("Error trying to update database: ", err)
+				slog.Info("Error trying to update database: ", err)
 			}
 		},
 	}

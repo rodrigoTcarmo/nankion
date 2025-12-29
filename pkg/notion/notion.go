@@ -3,6 +3,7 @@ package notion
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/dstotijn/go-notion"
 	"github.com/rodrigoTcarmo/nankion/pkg/models/properties"
@@ -59,7 +60,7 @@ func (n *Notion) uploadPages(databaseID string, report *statement.Report) error 
 		if err := n.page.CreatePage(*newPage); err != nil {
 			errs = append(errs, fmt.Errorf("error trying to create page for %s: %w", statement.Destination, err))
 		} else {
-			fmt.Println("Page succesfully created: ", statement.Memo)
+			slog.Info("Page successfully created", "memo", statement.Memo, "destination", statement.Destination)
 		}
 	}
 
