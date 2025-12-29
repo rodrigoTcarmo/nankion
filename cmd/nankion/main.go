@@ -79,14 +79,14 @@ func main() {
 		},
 	}
 
-	updateDatabaseProperty := &cobra.Command{
-		Use:   "update-property",
-		Short: "Get a Notion database properties by ID",
-		Args:  cobra.ExactArgs(1),
+	uploadStatement := &cobra.Command{
+		Use:   "upload-statement [database-id] [statement-filepath]",
+		Short: "Upload finantial statement to Notion",
+		Args:  cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
 			databaseID := args[0]
 			filePath := args[1]
-			fmt.Println("Updating database property")
+			fmt.Println("Uploading statement...")
 			nl := nankionNotion.NewNotionLoader()
 			err := nl.UploadReport(databaseID, filePath)
 			if err != nil {
@@ -97,7 +97,7 @@ func main() {
 
 	databaseCmd.AddCommand(getDatabaseCmd)
 	databaseCmd.AddCommand(listDatabasePropertiesCmd)
-	databaseCmd.AddCommand(updateDatabaseProperty)
+	databaseCmd.AddCommand(uploadStatement)
 
 	reportCmd.AddCommand(printReportCmd)
 
