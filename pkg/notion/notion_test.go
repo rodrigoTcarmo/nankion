@@ -285,3 +285,171 @@ func TestUploadReport(t *testing.T) {
 		})
 	}
 }
+
+func TestUploadPages(t *testing.T) {
+	databaseID := "test-database-id"
+
+	tests := []struct {
+		name            string
+		report          *statement.Report
+		mockBuildPage   func(dbID string, stmt statement.Statement) (*page.PageData, error)
+		mockCreatePage  func(pageData page.PageData) error
+		wantError       bool
+		wantErrContains []string
+		wantCreateCalls int
+	}{
+		{
+			name: "successfully upload all pages",
+			report: &statement.Report{
+				Statements: []statement.Statement{
+					{Destination: "Store A", Memo: "Purchase 1"},
+					{Destination: "Store B", Memo: "Purchase 2"},
+				},
+			},
+			mockBuildPage: func(dbID string, stmt statement.Statement) (*page.PageData, error) {
+				return &page.PageData{DatabaseId: dbID}, nil
+			},
+			mockCreatePage: func(pageData page.PageData) error {
+				return nil
+			},
+			wantError:       false,
+			wantCreateCalls: 2,
+		},
+		{
+			name: "empty report with no statements",
+			report: &statement.Report{
+				Statements: []statement.Statement{},
+			},
+			mockBuildPage: func(dbID string, stmt statement.Statement) (*page.PageData, error) {
+				return &page.PageData{DatabaseId: dbID}, nil
+			},
+			mockCreatePage: func(pageData page.PageData) error {
+				return nil
+			},
+			wantError:       false,
+			wantCreateCalls: 0,
+		},
+		{
+			name: "build page error should continue with other statements",
+			report: &statement.Report{
+				Statements: []statement.Statement{
+					{Destination: "Store A", Memo: "Purchase 1"},
+					{Destination: "Store B", Memo: "Purchase 2"},
+					{Destination: "Store C", Memo: "Purchase 3"},
+				},
+			},
+			mockBuildPage: func(dbID string, stmt statement.Statement) (*page.PageData, error) {
+				if stmt.Destination == "Store B" {
+					return nil, errors.New("build page failed")
+				}
+				return &page.PageData{DatabaseId: dbID}, nil
+			},
+			mockCreatePage: func(pageData page.PageData) error {
+				return nil
+			},
+			wantError:       true,
+			wantErrContains: []string{"error trying to build page for Store B"},
+			wantCreateCalls: 2,
+		},
+		{
+			name: "create page error should continue with other statements",
+			report: &statement.Report{
+				Statements: []statement.Statement{
+					{Destination: "Store A", Memo: "Purchase 1"},
+					{Destination: "Store B", Memo: "Purchase 2"},
+					{Destination: "Store C", Memo: "Purchase 3"},
+				},
+			},
+			mockBuildPage: func(dbID string, stmt statement.Statement) (*page.PageData, error) {
+				return &page.PageData{DatabaseId: dbID}, nil
+			},
+			mockCreatePage: func(pageData page.PageData) error {
+				return errors.New("create page failed")
+			},
+			wantError:       true,
+			wantErrContains: []string{"error trying to create page for Store A", "error trying to create page for Store B", "error trying to create page for Store C"},
+			wantCreateCalls: 3,
+		},
+		{
+			name: "mixed errors from build and create",
+			report: &statement.Report{
+				Statements: []statement.Statement{
+					{Destination: "Store A", Memo: "Purchase 1"},
+					{Destination: "Store B", Memo: "Purchase 2"},
+					{Destination: "Store C", Memo: "Purchase 3"},
+				},
+			},
+			mockBuildPage: func(dbID string, stmt statement.Statement) (*page.PageData, error) {
+				if stmt.Destination == "Store A" {
+					return nil, errors.New("build page failed")
+				}
+				return &page.PageData{DatabaseId: dbID}, nil
+			},
+			mockCreatePage: func(pageData page.PageData) error {
+				return errors.New("create page failed")
+			},
+			wantError:       true,
+			wantErrContains: []string{"error trying to build page for Store A", "error trying to create page for Store B", "error trying to create page for Store C"},
+			wantCreateCalls: 2,
+		},
+		{
+			name: "all build page errors",
+			report: &statement.Report{
+				Statements: []statement.Statement{
+					{Destination: "Store A", Memo: "Purchase 1"},
+					{Destination: "Store B", Memo: "Purchase 2"},
+				},
+			},
+			mockBuildPage: func(dbID string, stmt statement.Statement) (*page.PageData, error) {
+				return nil, errors.New("build page failed")
+			},
+			mockCreatePage: func(pageData page.PageData) error {
+				return nil
+			},
+			wantError:       true,
+			wantErrContains: []string{"error trying to build page for Store A", "error trying to build page for Store B"},
+			wantCreateCalls: 0,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			createPageCalls := 0
+
+			mockPage := &pagemock.MockPageClient{
+				BuildPageFunc: test.mockBuildPage,
+				CreatePageFunc: func(pageData page.PageData) error {
+					createPageCalls++
+					return test.mockCreatePage(pageData)
+				},
+			}
+
+			n := &Notion{
+				page: mockPage,
+			}
+
+			err := n.uploadPages(databaseID, test.report)
+
+			// Check error expectations
+			if test.wantError {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				for _, errContains := range test.wantErrContains {
+					if !strings.Contains(err.Error(), errContains) {
+						t.Errorf("expected error to contain %q, got: %v", errContains, err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("expected no error, got: %v", err)
+				}
+			}
+
+			// Verify CreatePage call count
+			if createPageCalls != test.wantCreateCalls {
+				t.Errorf("expected %d CreatePage calls, got %d", test.wantCreateCalls, createPageCalls)
+			}
+		})
+	}
+}
