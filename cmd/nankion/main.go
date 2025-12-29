@@ -98,7 +98,6 @@ func main() {
 	databaseCmd.AddCommand(getDatabaseCmd)
 	databaseCmd.AddCommand(listDatabasePropertiesCmd)
 	databaseCmd.AddCommand(uploadStatement)
-
 	reportCmd.AddCommand(printReportCmd)
 
 	rootCmd.AddCommand(databaseCmd)
