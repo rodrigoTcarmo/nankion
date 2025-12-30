@@ -27,7 +27,7 @@ func NewNotionLoader() *Notion {
 	}
 }
 
-// UploadStatement uploads a report to the Notion database
+// UploadStatement uploads a statement to Notion database
 func (n *Notion) UploadStatement(databaseID, filePath string) error {
 	if err := n.validateDatabase(databaseID); err != nil {
 		return fmt.Errorf("error trying to validate database: %s", err)
@@ -47,6 +47,24 @@ func (n *Notion) UploadStatement(databaseID, filePath string) error {
 	}
 
 	return nil
+}
+
+// UploadStatements uploads multiple statements to Notion database
+func (n *Notion) UploadStatements(databaseID, folderPath string) error {
+	ofxFiles, err := statement.ReadOFXs(folderPath)
+	if err != nil {
+		return err
+	}
+
+	var errs []error
+	for _, ofxFile := range ofxFiles {
+		err := n.UploadStatement(databaseID, ofxFile)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("error trying to upload statement %s, %s", ofxFile, err))
+			continue
+		}
+	}
+	return errors.Join(errs...)
 }
 
 func (n *Notion) uploadPages(databaseID string, report *statement.Report) error {
