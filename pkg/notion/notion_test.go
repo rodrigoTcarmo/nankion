@@ -17,6 +17,15 @@ import (
 	"github.com/rodrigoTcarmo/nankion/pkg/statement"
 )
 
+var allProperties = notion.DatabaseProperties{
+	"Transaction Date": notion.DatabaseProperty{Name: "Transaction Date", Type: notion.DBPropTypeDate},
+	"Operation":        notion.DatabaseProperty{Name: "Operation", Type: notion.DBPropTypeSelect},
+	"Destination":      notion.DatabaseProperty{Name: "Destination", Type: notion.DBPropTypeRichText},
+	"Amount":           notion.DatabaseProperty{Name: "Amount", Type: notion.DBPropTypeNumber},
+	"Memo":             notion.DatabaseProperty{Name: "Memo", Type: notion.DBPropTypeRichText},
+	"Transaction ID":   notion.DatabaseProperty{Name: "Transaction ID", Type: notion.DBPropTypeRichText},
+}
+
 // getTestDataPath returns the absolute path to the testdata directory
 func getTestDataPath(filename string) string {
 	_, currentFile, _, _ := runtime.Caller(0)
@@ -26,14 +35,6 @@ func getTestDataPath(filename string) string {
 
 func TestUploadReport(t *testing.T) {
 	databaseId := "1234567890"
-	allProperties := notion.DatabaseProperties{
-		"Transaction Date": notion.DatabaseProperty{Name: "Transaction Date", Type: notion.DBPropTypeDate},
-		"Operation":        notion.DatabaseProperty{Name: "Operation", Type: notion.DBPropTypeSelect},
-		"Destination":      notion.DatabaseProperty{Name: "Destination", Type: notion.DBPropTypeRichText},
-		"Amount":           notion.DatabaseProperty{Name: "Amount", Type: notion.DBPropTypeNumber},
-		"Memo":             notion.DatabaseProperty{Name: "Memo", Type: notion.DBPropTypeRichText},
-		"Transaction ID":   notion.DatabaseProperty{Name: "Transaction ID", Type: notion.DBPropTypeRichText},
-	}
 	tests := []struct {
 		name                   string
 		envDatabaseId          string
@@ -449,6 +450,189 @@ func TestUploadPages(t *testing.T) {
 			// Verify CreatePage call count
 			if createPageCalls != test.wantCreateCalls {
 				t.Errorf("expected %d CreatePage calls, got %d", test.wantCreateCalls, createPageCalls)
+			}
+		})
+	}
+}
+
+func TestUploadStatements(t *testing.T) {
+	databaseId := "1234567890"
+	// Helper function to read the test OFX content
+	testOFXContent := func() []byte {
+		content, _ := os.ReadFile(getTestDataPath("test.ofx"))
+		return content
+	}
+
+	// Helper function to create a temp folder with OFX files
+	createTempFolderWithOFXFiles := func(t *testing.T, fileCount int) string {
+		tempDir := t.TempDir()
+		content := testOFXContent()
+		for i := 0; i < fileCount; i++ {
+			fileName := filepath.Join(tempDir, "test"+string(rune('A'+i))+".ofx")
+			if err := os.WriteFile(fileName, content, 0644); err != nil {
+				t.Fatalf("failed to create test OFX file: %v", err)
+			}
+		}
+		return tempDir
+	}
+
+	tests := []struct {
+		name                   string
+		setupFolder            func(t *testing.T) string
+		mockDatabase           func(string) (*notion.Database, error)
+		mockBuildPage          func(dbID string, stmt statement.Statement) (*page.PageData, error)
+		wantErrContains        []string
+		wantCreatePageCalls    int
+	}{
+		{
+			name: "successfully upload all OFX files from folder",
+			setupFolder: func(t *testing.T) string {
+				return createTempFolderWithOFXFiles(t, 2)
+			},
+			wantCreatePageCalls: 2, // 2 files, each with 1 transaction
+		},
+		{
+			name: "empty folder with no OFX files",
+			setupFolder: func(t *testing.T) string {
+				return t.TempDir() // Empty folder
+			},
+			wantCreatePageCalls: 0,
+		},
+		{
+			name: "folder does not exist",
+			setupFolder: func(t *testing.T) string {
+				return "/nonexistent/folder/path"
+			},
+			wantErrContains:     []string{"error trying to read directory"},
+			wantCreatePageCalls: 0,
+		},
+		{
+			name: "folder with non-OFX files only",
+			setupFolder: func(t *testing.T) string {
+				tempDir := t.TempDir()
+				// Create non-OFX files
+				os.WriteFile(filepath.Join(tempDir, "test.txt"), []byte("test"), 0644)
+				os.WriteFile(filepath.Join(tempDir, "data.csv"), []byte("a,b,c"), 0644)
+				return tempDir
+			},
+			wantCreatePageCalls: 0,
+		},
+		{
+			name: "database validation fails",
+			setupFolder: func(t *testing.T) string {
+				return createTempFolderWithOFXFiles(t, 2)
+			},
+			mockDatabase: func(databaseId string) (*notion.Database, error) {
+				return nil, errors.New("database not found")
+			},
+			wantErrContains:     []string{"error trying to upload statement", "error trying to validate database"},
+			wantCreatePageCalls: 0,
+		},
+		{
+			name: "some files fail to upload",
+			setupFolder: func(t *testing.T) string {
+				return createTempFolderWithOFXFiles(t, 3)
+			},
+			mockBuildPage: func() func(dbID string, stmt statement.Statement) (*page.PageData, error) {
+				callCount := 0
+				return func(dbID string, stmt statement.Statement) (*page.PageData, error) {
+					callCount++
+					if callCount == 2 {
+						return nil, errors.New("build page failed")
+					}
+					return &page.PageData{DatabaseId: dbID}, nil
+				}
+			}(),
+			wantErrContains:     []string{"error trying to upload statement"},
+			wantCreatePageCalls: 2, // 3 files, but 1 fails at build
+		},
+		{
+			name: "all files fail to upload",
+			setupFolder: func(t *testing.T) string {
+				return createTempFolderWithOFXFiles(t, 2)
+			},
+			mockBuildPage: func(dbID string, stmt statement.Statement) (*page.PageData, error) {
+				return nil, errors.New("build page failed")
+			},
+			wantErrContains:     []string{"error trying to upload statement"},
+			wantCreatePageCalls: 0,
+		},
+		{
+			name: "mixed OFX and non-OFX files in folder",
+			setupFolder: func(t *testing.T) string {
+				tempDir := t.TempDir()
+				content := testOFXContent()
+				// Create OFX files
+				os.WriteFile(filepath.Join(tempDir, "test1.ofx"), content, 0644)
+				os.WriteFile(filepath.Join(tempDir, "test2.OFX"), content, 0644) // uppercase extension
+				// Create non-OFX files
+				os.WriteFile(filepath.Join(tempDir, "readme.txt"), []byte("test"), 0644)
+				os.WriteFile(filepath.Join(tempDir, "data.csv"), []byte("a,b,c"), 0644)
+				return tempDir
+			},
+			wantCreatePageCalls: 2, // Only 2 OFX files should be processed
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			createPageCalls := 0
+
+			mockPage := &pagemock.MockPageClient{
+				BuildPageFunc: func(databaseID string, statement statement.Statement) (*page.PageData, error) {
+					if test.mockBuildPage != nil {
+						return test.mockBuildPage(databaseID, statement)
+					}
+					return &page.PageData{DatabaseId: databaseID}, nil
+				},
+				CreatePageFunc: func(pageData page.PageData) error {
+					createPageCalls++
+					return nil
+				},
+			}
+
+			mockUpsert := func(databaseId string, properties map[string]*notion.DatabaseProperty) error {
+				return nil
+			}
+
+			loader := &Notion{
+				database: &databasemock.MockDatabaseClient{
+					GetDatabaseFunc: func(databaseId string) (*notion.Database, error) {
+						if test.mockDatabase != nil {
+							return test.mockDatabase(databaseId)
+						}
+						return &notion.Database{ID: databaseId, Properties: allProperties}, nil
+					},
+					ListDatabasePropertiesFunc:   func(databaseID string) (notion.DatabaseProperties, error) {
+						return allProperties, nil
+					},
+					UpsertDatabasePropertiesFunc: mockUpsert,
+				},
+				page: mockPage,
+			}
+
+			folderPath := test.setupFolder(t)
+			err := loader.UploadStatements(databaseId, folderPath)
+
+			// Check error expectations
+			if test.wantErrContains != nil {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				for _, errContains := range test.wantErrContains {
+					if !strings.Contains(err.Error(), errContains) {
+						t.Errorf("expected error to contain %q, got: %v", errContains, err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("expected no error, got: %v", err)
+				}
+			}
+
+			// Verify CreatePage call count
+			if createPageCalls != test.wantCreatePageCalls {
+				t.Errorf("expected %d CreatePage calls, got %d", test.wantCreatePageCalls, createPageCalls)
 			}
 		})
 	}

@@ -3,7 +3,9 @@ package statement
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/aclindsa/ofxgo"
 )
@@ -22,6 +24,26 @@ func ReadOFX(filepath string) (*ofxgo.Response, error) {
 	}
 
 	return response, nil
+}
+
+func ReadOFXs(folderpath string) ([]string, error) {
+	entries, err := os.ReadDir(folderpath)
+	if err != nil {
+		return nil, fmt.Errorf("error trying to read directory: %s", err)
+	}
+
+	var ofxFiles []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		if strings.HasSuffix(strings.ToLower(entry.Name()), ".ofx") {
+			ofxFiles = append(ofxFiles, filepath.Join(folderpath, entry.Name()))
+		}
+	}
+
+	return ofxFiles, nil
 }
 
 // CreateReport creates a Report struct from an OFX response.

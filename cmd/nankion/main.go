@@ -65,9 +65,9 @@ func main() {
 		},
 	}
 
-	uploadStatement := &cobra.Command{
+	uploadSingleStatement := &cobra.Command{
 		Use:   "upload [database-id] [statement-filepath]",
-		Short: "Upload finantial statement to Notion",
+		Short: "Upload financial statement to Notion",
 		Args:  cobra.ExactArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
 			databaseID := args[0]
@@ -76,14 +76,31 @@ func main() {
 			nl := nankionNotion.NewNotionLoader()
 			err := nl.UploadStatement(databaseID, filePath)
 			if err != nil {
-				slog.Info("Error trying to update database: ", err)
+				slog.Info("error trying to update database: ", "error", err.Error())
+			}
+		},
+	}
+
+	uploadMultipleStatements := &cobra.Command{
+		Use:   "upload-statements [database-id] [statement-folderpath]",
+		Short: "Upload multiple .ofx financial statements to Notion",
+		Args:  cobra.ExactArgs(2),
+		Run: func(cmd *cobra.Command, args []string) {
+			databaseID := args[0]
+			folderPath := args[1]
+			slog.Info("Uploading statements...")
+			nl := nankionNotion.NewNotionLoader()
+			err := nl.UploadStatements(databaseID, folderPath)
+			if err != nil {
+				slog.Info("error trying to update database: ", "error", err.Error())
 			}
 		},
 	}
 
 	databaseCmd.AddCommand(getDatabaseCmd)
 	databaseCmd.AddCommand(listDatabasePropertiesCmd)
-	reportCmd.AddCommand(uploadStatement)
+	reportCmd.AddCommand(uploadSingleStatement)
+	reportCmd.AddCommand(uploadMultipleStatements)
 
 	rootCmd.AddCommand(databaseCmd)
 	rootCmd.AddCommand(reportCmd)
