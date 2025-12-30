@@ -225,7 +225,7 @@ func TestUploadReport(t *testing.T) {
 
 			os.Setenv("DATABASE_ID", test.envDatabaseId)
 
-			err := loader.UploadReport(test.envDatabaseId, test.filePath)
+			err := loader.UploadStatement(test.envDatabaseId, test.filePath)
 
 			// Check error expectations
 			if err != nil {
