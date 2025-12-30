@@ -7,7 +7,7 @@ import (
 )
 
 func NewClient() *notion.Client{
-	secret := os.Getenv("NOTION_CARMO_SECRET")
+	secret := os.Getenv("NOTION_SECRET")
 	if secret == ""{
 		panic("notion secret not found!")
 	}
