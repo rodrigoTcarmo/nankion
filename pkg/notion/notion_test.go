@@ -211,7 +211,7 @@ func TestUploadReport(t *testing.T) {
 			}
 
 			loader := &Notion{
-				database: &databasemock.MockDatabaseClient{
+				Database: &databasemock.MockDatabaseClient{
 					GetDatabaseFunc: func(databaseId string) (*notion.Database, error) {
 						if test.mockDatabase != nil {
 							return test.mockDatabase(databaseId)
@@ -221,7 +221,7 @@ func TestUploadReport(t *testing.T) {
 					ListDatabasePropertiesFunc:   test.mockDatabaseProperties,
 					UpsertDatabasePropertiesFunc: mockUpsert,
 				},
-				page: mockPage,
+				Page: mockPage,
 			}
 
 			os.Setenv("DATABASE_ID", test.envDatabaseId)
@@ -426,7 +426,7 @@ func TestUploadPages(t *testing.T) {
 			}
 
 			n := &Notion{
-				page: mockPage,
+				Page: mockPage,
 			}
 
 			err := n.uploadPages(databaseID, test.report)
@@ -596,7 +596,7 @@ func TestUploadStatements(t *testing.T) {
 			}
 
 			loader := &Notion{
-				database: &databasemock.MockDatabaseClient{
+				Database: &databasemock.MockDatabaseClient{
 					GetDatabaseFunc: func(databaseId string) (*notion.Database, error) {
 						if test.mockDatabase != nil {
 							return test.mockDatabase(databaseId)
@@ -608,7 +608,7 @@ func TestUploadStatements(t *testing.T) {
 					},
 					UpsertDatabasePropertiesFunc: mockUpsert,
 				},
-				page: mockPage,
+				Page: mockPage,
 			}
 
 			folderPath := test.setupFolder(t)

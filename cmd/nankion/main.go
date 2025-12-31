@@ -6,7 +6,6 @@ import (
 
 	"github.com/rodrigoTcarmo/nankion/pkg/log"
 	nankionNotion "github.com/rodrigoTcarmo/nankion/pkg/notion"
-	notiondatabase "github.com/rodrigoTcarmo/nankion/pkg/notion/database"
 	"github.com/spf13/cobra"
 )
 
@@ -38,8 +37,8 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			databaseID := args[0]
 			slog.Info("Fetching database", "databaseID", databaseID)
-			databaseCLI := notiondatabase.NewDatabase()
-			database, err := databaseCLI.GetDatabase(databaseID)
+			nl := nankionNotion.NewNotionLoader()
+			database, err := nl.Database.GetDatabase(databaseID)
 			if err != nil {
 				slog.Error("Error fetching database", "error", err.Error())
 				return
@@ -55,8 +54,8 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			databaseID := args[0]
 			slog.Info("Fetching database properties", "databaseID", databaseID)
-			databaseCLI := notiondatabase.NewDatabase()
-			database, err := databaseCLI.ListDatabaseProperties(databaseID)
+			nl := nankionNotion.NewNotionLoader()
+			database, err := nl.Database.ListDatabaseProperties(databaseID)
 			if err != nil {
 				slog.Error("error fetching database properties", "error", err.Error())
 				return

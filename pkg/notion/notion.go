@@ -14,16 +14,15 @@ import (
 )
 
 type Notion struct {
-	client   *notion.Client
-	database database.Database
-	page     page.Page
+	Database database.Database
+	Page     page.Page
 }
 
 func NewNotionLoader() *Notion {
+	notionClient := notionclient.NewClient()
 	return &Notion{
-		client:   notionclient.NewClient(),
-		database: database.NewDatabase(),
-		page:     page.NewPage(),
+		Database: database.NewDatabase(notionClient),
+		Page:     page.NewPage(notionClient),
 	}
 }
 
@@ -70,12 +69,12 @@ func (n *Notion) UploadStatements(databaseID, folderPath string) error {
 func (n *Notion) uploadPages(databaseID string, report *statement.Report) error {
 	var errs []error
 	for _, statement := range report.Statements {
-		newPage, err := n.page.BuildPage(databaseID, statement)
+		newPage, err := n.Page.BuildPage(databaseID, statement)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("error trying to build page for %s: %w", statement.Destination, err))
 			continue
 		}
-		if err := n.page.CreatePage(*newPage); err != nil {
+		if err := n.Page.CreatePage(*newPage); err != nil {
 			errs = append(errs, fmt.Errorf("error trying to create page for %s: %w", statement.Destination, err))
 		} else {
 			slog.Info("Page successfully created", "memo", statement.Memo, "destination", statement.Destination)
@@ -86,7 +85,7 @@ func (n *Notion) uploadPages(databaseID string, report *statement.Report) error 
 }
 
 func (n *Notion) validateDatabase(databaseID string) error {
-	_, err := n.database.GetDatabase(databaseID)
+	_, err := n.Database.GetDatabase(databaseID)
 	if err != nil {
 		return err
 	}
@@ -109,7 +108,7 @@ func (n *Notion) validateDatabaseProperties(databaseID string) error {
 }
 
 func (n *Notion) getExistentProperties(databaseID string) (map[string]notion.DatabasePropertyType, error) {
-	databaseProperties, err := n.database.ListDatabaseProperties(databaseID)
+	databaseProperties, err := n.Database.ListDatabaseProperties(databaseID)
 	if err != nil {
 		return nil, fmt.Errorf("error trying to list database properties: %s", err)
 	}
@@ -133,7 +132,7 @@ func (n *Notion) mapMissingProperties(existentProperties map[string]notion.Datab
 }
 
 func (n *Notion) upsertDatabaseProperties(databaseID string, missingProperties map[string]*notion.DatabaseProperty) error {
-	if err := n.database.UpsertDatabaseProperties(databaseID, missingProperties); err != nil {
+	if err := n.Database.UpsertDatabaseProperties(databaseID, missingProperties); err != nil {
 		return fmt.Errorf("error trying to upsert new database properties: %s", err)
 	}
 

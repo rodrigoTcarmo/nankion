@@ -15,7 +15,7 @@ type Database interface {
 }
 
 type database struct {
-	client *notion.Client
+	client notionclient.NotionClient
 }
 
 func (d *database) GetDatabase(databaseId string) (*notion.Database, error) {
@@ -50,8 +50,8 @@ func (d *database) UpsertDatabaseProperties(databaseId string, properties map[st
 	return nil
 }
 
-func NewDatabase() *database {
+func NewDatabase(client notionclient.NotionClient) *database {
 	return &database{
-		client: notionclient.NewClient(),
+		client: client,
 	}
 }

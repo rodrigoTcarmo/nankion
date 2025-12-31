@@ -21,7 +21,7 @@ type PageData struct {
 }
 
 type page struct {
-	client *notion.Client
+	client notionclient.NotionClient
 }
 
 func (p *page) BuildPage(databaseID string, statement statement.Statement) (*PageData, error) {
@@ -69,8 +69,8 @@ func (p *page) BuildPageProperties(statement statement.Statement) (*notion.Datab
 	}, nil
 }
 
-func NewPage() Page {
+func NewPage(client notionclient.NotionClient) Page {
 	return &page{
-		client: notionclient.NewClient(),
+		client: client,
 	}
 }
