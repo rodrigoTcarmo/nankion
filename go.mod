@@ -1,6 +1,6 @@
 module github.com/rodrigoTcarmo/nankion
 
-go 1.22.1
+go 1.24
 
 require (
 	github.com/aclindsa/ofxgo v0.1.3
